@@ -16,7 +16,7 @@ export default function ResumePage() {
       ],
       decision: [
         [
-          "Partnered with engineering to roadmap + sequence releases",
+          "Partnered with engineering to roadmap + sequence monthly thematic releases",
           "Equipped marketing with launch narratives and analytics",
         ],
       ],
@@ -48,7 +48,7 @@ export default function ResumePage() {
       impact: [
         "📈 +50% WAU on Premium Analysis",
         "💎 +1,150% Free-to-Premium conversions",
-        "📊 Days per month increased by 50%"
+        "📊 Days per month usage increased by 50%"
       ],
       demoUrl: "https://www.surfline.com/lp/whatsnew/releases/jan-25",
       detailsUrl: "/projects/premium-content",
@@ -70,7 +70,7 @@ export default function ResumePage() {
       tags: ['Product Strategy', 'Data', 'Growth','Machine Learning'],
     },
     {
-      title: 'Scaling Analytics: Refactoring Event Data into a Self-Serve Platform',
+      title: 'Refactoring Event Data into a Self-Serve Platform.',
       problem: [
         [
         'Event tracking was inconsistent across platforms (iOS, Android, Web).',
@@ -96,8 +96,8 @@ export default function ResumePage() {
       tags: ['Data Strategy', 'Analytics', 'Platform', 'Cost Optimization'],
     },
     {
-      title: 'Dark Mode Rollout',
-      problem: 'Users lacked a nighttime (and early morning) -friendly UI and modern visual parity.',
+      title: 'Bringing comfort and modern design parity with Dark Mode.',
+      problem: 'App lacked modern visual parity and user expectations for dark mode.',
       decision: 'Partnered with our squad designer to upgrade the design system and executed a full-app dark mode.',
       impact: [
         '🌙 Adopted by over 50% of active users',
@@ -202,12 +202,96 @@ export default function ResumePage() {
         </div>
       </section>
 
-            {/* Projects Section */}
+      {/* By the Numbers Section */}
+      <section className="py-12 px-6 lg:px-24 bg-slate-800/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center space-y-4 mb-8">
+            <Badge variant="outline" className="w-fit mx-auto border-slate-600 text-slate-300 text-base px-4 py-2">
+              By the Numbers
+            </Badge>
+            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+              Quantified impact across key initiatives
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div>
+              <h3 className="text-3xl font-bold text-white">💰 $100k</h3>
+              <p className="text-slate-400 text-sm mt-1">Annual cost savings</p>
+            </div>
+            <div>
+              <h3 className="text-3xl font-bold text-white">📈 +1,150%</h3>
+              <p className="text-slate-400 text-sm mt-1">Conversion lift</p>
+            </div>
+            <div>
+              <h3 className="text-3xl font-bold text-white">🌍 +244%</h3>
+              <p className="text-slate-400 text-sm mt-1">DAU growth on live data</p>
+            </div>
+            <div>
+              <h3 className="text-3xl font-bold text-white">📊 +15%</h3>
+              <p className="text-slate-400 text-sm mt-1">NPS increase</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Questions I Ask Section */}
+      <section className="py-12 px-6 lg:px-24 bg-slate-900/40">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center space-y-4 mb-8">
+            <Badge variant="outline" className="w-fit mx-auto border-slate-600 text-slate-300 text-base px-4 py-2">
+              Stay Curious
+            </Badge>
+            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+              A few of the prompts I use to guide product discovery, align stakeholders, and focus execution.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            <ul className="space-y-4 text-slate-300">
+              <li className="flex gap-3">
+                <span className="text-blue-400">❓</span>
+                What decision are we unlocking with this work?
+              </li>
+              <li className="flex gap-3">
+                <span className="text-blue-400">📊</span>
+                How will we measure success?
+              </li>
+              <li className="flex gap-3">
+                <span className="text-blue-400">🧪</span>
+                What could falsify our assumption before we build?
+              </li>
+              <li className="flex gap-3">
+                <span className="text-blue-400">⚖️</span>
+                What gets worse if we ship this?
+              </li>
+            </ul>
+            <ul className="space-y-4 text-slate-300">
+              <li className="flex gap-3">
+                <span className="text-blue-400">🔬</span>
+                What's the smallest test that would show if this matters to users?
+              </li>
+              <li className="flex gap-3">
+                <span className="text-blue-400">⚡</span>
+                If this fails, how will we know quickly?
+              </li>
+              <li className="flex gap-3">
+                <span className="text-blue-400">👥</span>
+                Who needs to be in the loop to make this succeed?
+              </li>
+              <li className="flex gap-3">
+                <span className="text-blue-400">☕</span>
+                Did I have enough coffee before this meeting?
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Projects Section */}
       <section id="projects" className="py-8 px-6 lg:px-24 bg-slate-800/50">
         <div className="mx-auto">
           <div className="text-center space-y-4 mb-12">
             <Badge variant="outline" className="w-fit mx-auto border-slate-600 text-slate-300 text-base px-4 py-2">
-              Featured Work
+              Proof
             </Badge>
             <p className="text-xl text-slate-300 max-w-2xl mx-auto">
               Impactful product initiatives that drove measurable business results
@@ -257,7 +341,7 @@ export default function ResumePage() {
                         </div>
 
                         <div>
-                          <h4 className="font-semibold text-white mb-2">Decision</h4>
+                          <h4 className="font-semibold text-white mb-2">Decisions</h4>
                           {Array.isArray(project.decision) ? (
                             project.decision.map((block, blockIndex) => (
                               Array.isArray(block) ? (
