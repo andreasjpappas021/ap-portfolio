@@ -186,14 +186,18 @@ export default function ResumePage() {
             {/* Video Section */}
             <div className="relative">
               <div className="aspect-video bg-slate-800 rounded-xl overflow-hidden shadow-xl border border-slate-700">
-                <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center">
-                  <Button
-                    size="lg"
-                    className="rounded-full w-14 h-14 p-0 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  >
-                    <Play className="w-5 h-5 ml-1" />
-                  </Button>
-                </div>
+                <video
+                  className="w-full h-full object-cover"
+                  controls
+                  preload="metadata"
+                  autoPlay
+                  controlsList="nofullscreen"
+                  disablePictureInPicture
+                >
+                  <source src="/videos/portfoliointo.mov" type="video/quicktime" />
+                  <source src="/videos/portfoliointo.mov" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               </div>
               <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full opacity-20"></div>
               <div className="absolute -top-3 -left-3 w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-20"></div>
