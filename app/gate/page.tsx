@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { identify, track } from '@/lib/customerio'
+import Image from 'next/image'
 
 export default function GatePage() {
   const router = useRouter()
@@ -48,94 +49,103 @@ export default function GatePage() {
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '80px auto', padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12 }}>Sign up to view</h1>
-      <p style={{ marginBottom: 24, color: '#555' }}>Brief form to access the portfolio.</p>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>First name</span>
-          <input
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Jane"
-            style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
-          />
-        </label>
+    <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* Header with avatar + name */}
+      <div className="w-full pt-12 pb-6 flex flex-col items-center">
+        <div className="w-20 h-20 rounded-full overflow-hidden ring-1 ring-white/20">
+          <Image src="/images/headshot.png" alt="Andreas Pappas" width={80} height={80} className="object-cover" />
+        </div>
+        <div className="mt-3 text-white font-semibold text-lg">Andreas Pappas</div>
+      </div>
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>Last name</span>
-          <input
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Doe"
-            style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
-          />
-        </label>
+      {/* Centered translucent card */}
+      <div className="flex items-center justify-center pb-16 px-4">
+        <div className="w-full max-w-md rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl shadow-2xl">
+          <div className="p-6">
+            <h1 className="text-white text-2xl font-semibold mb-2">Sign up to view</h1>
+            <p className="text-slate-200/80 mb-6 text-sm">Brief form to access the portfolio.</p>
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>Email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="jane@example.com"
-            required
-            style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
-          />
-        </label>
+            <form onSubmit={onSubmit} className="grid gap-3">
+              <label className="grid gap-1 text-slate-200 text-sm">
+                <span>First name</span>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Jane"
+                  className="px-3 py-2 rounded-md bg-white/10 border border-white/15 text-white placeholder:text-slate-300/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </label>
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>Company</span>
-          <input
-            type="text"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder="Acme Inc"
-            style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
-          />
-        </label>
+              <label className="grid gap-1 text-slate-200 text-sm">
+                <span>Last name</span>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Doe"
+                  className="px-3 py-2 rounded-md bg-white/10 border border-white/15 text-white placeholder:text-slate-300/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </label>
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>Job</span>
-          <select
-            value={job}
-            onChange={(e) => setJob(e.target.value)}
-            required
-            style={{ padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
-          >
-            <option value="">Select a role</option>
-            <option value="Recruiting">Recruiting</option>
-            <option value="Product Management">Product Management</option>
-            <option value="Engineering">Engineering</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Design">Design</option>
-            <option value="Data">Data</option>
-            <option value="Sales">Sales</option>
-            <option value="Support">Support</option>
-          </select>
-        </label>
+              <label className="grid gap-1 text-slate-200 text-sm">
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                  required
+                  className="px-3 py-2 rounded-md bg-white/10 border border-white/15 text-white placeholder:text-slate-300/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </label>
 
-        {error ? (
-          <div style={{ color: '#b00020', fontSize: 14 }}>{error}</div>
-        ) : null}
+              <label className="grid gap-1 text-slate-200 text-sm">
+                <span>Company</span>
+                <input
+                  type="text"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="Acme Inc"
+                  className="px-3 py-2 rounded-md bg-white/10 border border-white/15 text-white placeholder:text-slate-300/60 focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </label>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            padding: '10px 14px',
-            borderRadius: 6,
-            border: '1px solid #222',
-            background: '#111',
-            color: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          {submitting ? 'Submitting…' : 'Continue'}
-        </button>
-      </form>
+              <label className="grid gap-1 text-slate-200 text-sm">
+                <span>Job</span>
+                <select
+                  value={job}
+                  onChange={(e) => setJob(e.target.value)}
+                  required
+                  className="px-3 py-2 rounded-md bg-white/10 border border-white/15 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                >
+                  <option value="" className="text-black">Select a role</option>
+                  <option value="Recruiting" className="text-black">Recruiting</option>
+                  <option value="Product Management" className="text-black">Product Management</option>
+                  <option value="Engineering" className="text-black">Engineering</option>
+                  <option value="Marketing" className="text-black">Marketing</option>
+                  <option value="Design" className="text-black">Design</option>
+                  <option value="Data" className="text-black">Data</option>
+                  <option value="Sales" className="text-black">Sales</option>
+                  <option value="Support" className="text-black">Support</option>
+                </select>
+              </label>
+
+              {error ? (
+                <div className="text-red-300 text-sm">{error}</div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-md border border-white/20 bg-white/15 text-white hover:bg-white/25 disabled:opacity-60"
+              >
+                {submitting ? 'Submitting…' : 'Continue'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
