@@ -50,8 +50,19 @@ export default function GatePage() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">
+      {/* Subtle site preview behind (non-interactive) */}
+      <div className="absolute inset-0 -z-20 pointer-events-none select-none">
+        <iframe
+          src="/"
+          aria-hidden="true"
+          className="w-full h-full scale-110 blur-xl opacity-60"
+          style={{ border: 'none' }}
+        />
+      </div>
+      {/* Dark overlay to keep focus on the form */}
+      <div className="absolute inset-0 -z-10 bg-black/60" />
       {/* Header with avatar + name */}
-      <div className="w-full pt-12 pb-6 flex flex-col items-center">
+      <div className="relative z-10 w-full pt-12 pb-6 flex flex-col items-center">
         <div className="w-20 h-20 rounded-full overflow-hidden ring-1 ring-white/20">
           <Image src="/images/headshot.png" alt="Andreas Pappas" width={80} height={80} className="object-cover" />
         </div>
@@ -59,7 +70,7 @@ export default function GatePage() {
       </div>
 
       {/* Centered translucent card */}
-      <div className="flex items-center justify-center pb-16 px-4">
+      <div className="relative z-10 flex items-center justify-center pb-16 px-4">
         <div className="w-full max-w-md rounded-xl border border-white/15 bg-white/10 backdrop-blur-xl shadow-2xl">
           <div className="p-6">
             <h1 className="text-white text-2xl font-semibold mb-2">Sign up to view</h1>
@@ -143,6 +154,7 @@ export default function GatePage() {
                 {submitting ? 'Submitting…' : 'Continue'}
               </button>
             </form>
+            {/* Mini-game removed */}
           </div>
         </div>
       </div>
