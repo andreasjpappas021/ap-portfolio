@@ -21,6 +21,41 @@ export default function CustomerIOProvider() {
     page({ path: pathname || '/' })
   }, [pathname, router])
 
+  // Dev-only helper to clear gate and reset Customer.io for quick re-tests
+  if (process.env.NODE_ENV !== 'production') {
+    return (
+      <button
+        onClick={() => {
+          try {
+            if (typeof window !== 'undefined') {
+              window.localStorage.removeItem('ci_gate')
+              if (window.cioanalytics && typeof window.cioanalytics.reset === 'function') {
+                window.cioanalytics.reset()
+              }
+            }
+          } catch (_) {}
+          router.replace('/gate')
+        }}
+        style={{
+          position: 'fixed',
+          bottom: 12,
+          right: 12,
+          zIndex: 9999,
+          padding: '8px 10px',
+          borderRadius: 6,
+          border: '1px solid #ddd',
+          background: '#fafafa',
+          color: '#111',
+          cursor: 'pointer',
+          fontSize: 12,
+        }}
+        aria-label="Clear access and reset Customer.io"
+      >
+        Clear access
+      </button>
+    )
+  }
+
   return null
 }
 
