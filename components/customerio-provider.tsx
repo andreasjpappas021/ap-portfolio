@@ -10,6 +10,25 @@ export default function CustomerIOProvider() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Check for access token/email in URL parameters (from email links)
+      const urlParams = new URLSearchParams(window.location.search)
+      const accessToken = urlParams.get('token')
+      const accessEmail = urlParams.get('email')
+      
+      // If there's a token or email parameter, grant access
+      if (accessToken || accessEmail) {
+        const emailToStore = accessEmail || accessToken
+        window.localStorage.setItem('ci_gate', emailToStore)
+        
+        // Clean up the URL by removing the parameters
+        urlParams.delete('token')
+        urlParams.delete('email')
+        const cleanSearch = urlParams.toString()
+        const cleanUrl = pathname + (cleanSearch ? `?${cleanSearch}` : '')
+        router.replace(cleanUrl)
+        return
+      }
+
       const isGate = pathname === '/gate'
       const gate = window.localStorage.getItem('ci_gate')
       if (!isGate && !gate) {
