@@ -190,7 +190,7 @@ export default function ResumePage() {
                   className="w-full h-full object-cover"
                   controls
                   preload="metadata"
-                  autoPlay
+                  poster="/images/video-thumbnail.png"
                   controlsList="nofullscreen"
                   disablePictureInPicture
                 >

@@ -16,11 +16,12 @@ export default function RootLayout({
 }>) {
   const cioKey = process.env.NEXT_PUBLIC_CIO_JS_KEY
   const enableAnonInApp = process.env.NEXT_PUBLIC_CIO_ANON_INAPP === 'true'
-  
+  const cioSiteId = process.env.NEXT_PUBLIC_CIO_SITE_ID
   
   // Build the analytics.load() call string
-  const loadCall = enableAnonInApp
-    ? `analytics.load("${cioKey}",{"integrations":{"Customer.io In-App Plugin":{"anonymousInApp":true}}});`
+  // Only enable In-App Plugin if siteId is provided (required for the plugin)
+  const loadCall = enableAnonInApp && cioSiteId
+    ? `analytics.load("${cioKey}",{"integrations":{"Customer.io In-App Plugin":{"anonymousInApp":true,"siteId":"${cioSiteId}"}}});`
     : `analytics.load("${cioKey}");`
   
   return (
