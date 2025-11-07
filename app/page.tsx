@@ -128,7 +128,6 @@ export default function ResumePage() {
                 />
               </div>
               <span className="font-semibold text-white">Andreas Pappas</span>
-              <span className="text-slate-400 text-sm ml-4">Vibe coded by me 🚀</span>
             </div>
             <div className="flex items-center space-x-6">
               <a href="#projects" className="text-slate-300 hover:text-white transition-colors">
