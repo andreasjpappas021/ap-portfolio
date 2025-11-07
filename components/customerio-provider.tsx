@@ -10,6 +10,7 @@ export default function CustomerIOProvider() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      
       // Check for access token/email in URL parameters (from email links)
       const urlParams = new URLSearchParams(window.location.search)
       const accessToken = urlParams.get('token')
@@ -18,14 +19,18 @@ export default function CustomerIOProvider() {
       // If there's a token or email parameter, grant access
       if (accessToken || accessEmail) {
         const emailToStore = accessEmail || accessToken
-        window.localStorage.setItem('ci_gate', emailToStore)
+        if (emailToStore) {
+          window.localStorage.setItem('ci_gate', emailToStore)
+        }
         
         // Clean up the URL by removing the parameters
         urlParams.delete('token')
         urlParams.delete('email')
         const cleanSearch = urlParams.toString()
         const cleanUrl = pathname + (cleanSearch ? `?${cleanSearch}` : '')
-        router.replace(cleanUrl)
+        if (cleanUrl) {
+          router.replace(cleanUrl)
+        }
         return
       }
 
@@ -48,8 +53,8 @@ export default function CustomerIOProvider() {
           try {
             if (typeof window !== 'undefined') {
               window.localStorage.removeItem('ci_gate')
-              if (window.cioanalytics && typeof window.cioanalytics.reset === 'function') {
-                window.cioanalytics.reset()
+              if (window.cioanalytics && !Array.isArray(window.cioanalytics) && typeof (window.cioanalytics as any).reset === 'function') {
+                (window.cioanalytics as any).reset()
               }
             }
           } catch (_) {}

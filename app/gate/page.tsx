@@ -40,6 +40,9 @@ export default function GatePage() {
         window.localStorage.setItem('ci_gate', email)
       }
 
+      // Small delay to ensure event fires before navigation
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
       router.push('/')
     } catch (err) {
       setError('Something went wrong. Please try again.')
