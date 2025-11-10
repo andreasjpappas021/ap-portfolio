@@ -1,8 +1,11 @@
+'use client'
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ExternalLink, Mail, Play, User, Linkedin, Phone } from "lucide-react"
 import Image from "next/image"
+import { track } from "@/lib/customerio"
 
 export default function ResumePage() {
   const projects = [
@@ -111,6 +114,10 @@ export default function ResumePage() {
 
   ]
 
+  const handleVideoPlay = () => {
+    track("Video Player Started")
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Navigation */}
@@ -192,6 +199,7 @@ export default function ResumePage() {
                   poster="/images/video-thumbnail.png"
                   controlsList="nofullscreen"
                   disablePictureInPicture
+                  onPlay={handleVideoPlay}
                 >
                   <source src="/videos/portfoliointo.mov" type="video/quicktime" />
                   <source src="/videos/portfoliointo.mov" type="video/mp4" />
