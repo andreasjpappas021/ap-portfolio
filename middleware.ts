@@ -71,6 +71,11 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // Allow stripe-success page to handle session restoration without auth check
+    if (request.nextUrl.pathname === '/auth/stripe-success') {
+      return NextResponse.next()
+    }
+
     // Protect dashboard routes
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
       if (!user) {
