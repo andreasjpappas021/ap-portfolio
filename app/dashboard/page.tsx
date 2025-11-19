@@ -12,14 +12,37 @@ import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type DashboardPageProps = {
-  searchParams: Promise<{ session_id?: string }>
+  searchParams: Promise<{ session_id?: string; stripe_session?: string }>
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const user = await requireAuth()
-  const supabase = await createClient()
   const params = await searchParams
-  const sessionId = params?.session_id
+  const stripeSessionId = params?.stripe_session || params?.session_id
+  
+  // If we have a stripe_session but user isn't authenticated, get email from Stripe and redirect to login
+  let user
+  try {
+    user = await requireAuth()
+  } catch (error) {
+    // If auth fails but we have a Stripe session, redirect to login with email pre-filled
+    if (stripeSessionId) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(stripeSessionId)
+        if (session.customer_email) {
+          const { redirect } = await import('next/navigation')
+          redirect(`/auth/login?email=${encodeURIComponent(session.customer_email)}&redirect=/dashboard&stripe_session=${stripeSessionId}`)
+        }
+      } catch (err) {
+        console.error('Error retrieving Stripe session:', err)
+      }
+    }
+    // If no Stripe session or error, redirect to login
+    const { redirect } = await import('next/navigation')
+    redirect('/auth/login?redirect=/dashboard')
+  }
+  
+  const supabase = await createClient()
+  const sessionId = stripeSessionId
 
   // If we have a session_id from Stripe redirect, verify payment and update status
   if (sessionId) {

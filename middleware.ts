@@ -79,6 +79,13 @@ export async function middleware(request: NextRequest) {
     // Protect dashboard routes
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
       if (!user) {
+        // Allow access if there's a stripe_session param (will be handled by dashboard page)
+        const stripeSession = request.nextUrl.searchParams.get('stripe_session')
+        if (stripeSession) {
+          // Let the dashboard page handle the Stripe session and redirect appropriately
+          return NextResponse.next()
+        }
+        
         try {
           const url = request.nextUrl.clone()
           url.pathname = '/auth/login'

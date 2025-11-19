@@ -92,9 +92,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Redirect to client-side success page that can handle session restoration
-    // This page will check for existing session and redirect appropriately
-    return NextResponse.redirect(new URL(`/auth/stripe-success?session_id=${sessionId}`, request.url))
+    // Redirect directly to dashboard with session_id
+    // Dashboard will handle payment verification and session restoration
+    return NextResponse.redirect(new URL(`/dashboard?stripe_session=${sessionId}`, request.url))
   } catch (error) {
     console.error('Error processing Stripe callback:', error)
     // Redirect to purchase page on error
