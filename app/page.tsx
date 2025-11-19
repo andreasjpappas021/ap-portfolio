@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ExternalLink, Mail, Play, User, Linkedin, Phone } from "lucide-react"
 import Image from "next/image"
 import { track } from "@/lib/customerio"
+import AuthButton from "@/components/AuthButton"
 
 export default function ResumePage() {
   const projects = [
@@ -147,6 +148,7 @@ export default function ResumePage() {
               >
                 Download Resume
               </a>
+              <AuthButton />
             </div>
           </div>
         </div>
@@ -421,6 +423,15 @@ export default function ResumePage() {
             bring it to life.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+              asChild
+            >
+              <a href="/auth/login">
+                <span>Book a Coaching Session</span>
+              </a>
+            </Button>
             <Button
               size="lg"
               className="flex items-center space-x-2 bg-transparent border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
