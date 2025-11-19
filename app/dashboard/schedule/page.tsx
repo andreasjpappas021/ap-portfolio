@@ -27,7 +27,12 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
       // Verify the session with Stripe
       const session = await stripe.checkout.sessions.retrieve(sessionId)
       
-      if (session.payment_status === 'paid' && session.metadata?.userId === user.id) {
+      // Auto-approve if payment is paid OR if in test mode (livemode === false)
+      const shouldApprove = 
+        (session.payment_status === 'paid' && session.metadata?.userId === user.id) ||
+        (session.livemode === false && session.metadata?.userId === user.id)
+      
+      if (shouldApprove) {
         // Update purchase status if not already paid (fallback if webhook didn't process)
         const adminSupabase = createAdminClient()
         await adminSupabase

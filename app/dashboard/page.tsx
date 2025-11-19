@@ -8,10 +8,90 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { trackEvent } from '@/lib/customerio-server'
 import { logAuditEvent } from '@/lib/audit'
 import SessionPrepForm from '@/components/SessionPrepForm'
+import { stripe } from '@/lib/stripe'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams: Promise<{ session_id?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const user = await requireAuth()
   const supabase = await createClient()
+  const params = await searchParams
+  const sessionId = params?.session_id
+
+  // If we have a session_id from Stripe redirect, verify payment and update status
+  if (sessionId) {
+    try {
+      // Verify the session with Stripe
+      const session = await stripe.checkout.sessions.retrieve(sessionId)
+      
+      // Auto-approve if payment is paid OR if in test mode (livemode === false)
+      const shouldApprove = 
+        (session.payment_status === 'paid' && session.metadata?.userId === user.id) ||
+        (session.livemode === false && session.metadata?.userId === user.id)
+      
+      if (shouldApprove) {
+        // Update purchase status if not already paid (fallback if webhook didn't process)
+        const adminSupabase = createAdminClient()
+        const { data: updatedPurchase } = await adminSupabase
+          .from('session_purchases')
+          .update({ status: 'paid' })
+          .eq('stripe_session_id', sessionId)
+          .eq('status', 'pending')
+          .select()
+          .single()
+
+        // If we successfully updated a pending purchase, track order_completed event
+        if (updatedPurchase) {
+          try {
+            // Get product details for tracking
+            let productName = 'Consulting Session'
+            let price = session.amount_total || 0
+            
+            try {
+              const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, {
+                limit: 1,
+              })
+              if (lineItems.data.length > 0 && lineItems.data[0].description) {
+                productName = lineItems.data[0].description
+              } else if (lineItems.data.length > 0 && lineItems.data[0].price?.product) {
+                const product = await stripe.products.retrieve(
+                  typeof lineItems.data[0].price.product === 'string'
+                    ? lineItems.data[0].price.product
+                    : lineItems.data[0].price.product.id
+                )
+                productName = product.name
+              }
+            } catch (err) {
+              console.error('Error retrieving product details:', err)
+            }
+
+            // Track order_completed event
+            await trackEvent(user.id, 'order_completed', {
+              session_id: sessionId,
+              product_name: productName,
+              price: price,
+              price_formatted: `$${(price / 100).toFixed(2)}`,
+              currency: session.currency || 'usd',
+            })
+            await logAuditEvent(user.id, 'order_completed', {
+              session_id: sessionId,
+              product_name: productName,
+              price: price,
+            })
+            console.log('order_completed event tracked (fallback)')
+          } catch (err) {
+            console.error('Error tracking order_completed event:', err)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying payment session:', error)
+      // Continue anyway - we'll check database status below
+    }
+  }
 
   // Get user's session purchases
   const { data: purchases } = await supabase

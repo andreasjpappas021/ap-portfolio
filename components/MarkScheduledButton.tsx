@@ -40,7 +40,7 @@ export default function MarkScheduledButton({ purchaseId }: MarkScheduledButtonP
 
       // Track meeting scheduled event
       try {
-        await fetch('/api/customerio/track', {
+        const trackResponse = await fetch('/api/customerio/track', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -54,6 +54,13 @@ export default function MarkScheduledButton({ purchaseId }: MarkScheduledButtonP
             },
           }),
         })
+        
+        if (!trackResponse.ok) {
+          const errorData = await trackResponse.json().catch(() => ({}))
+          console.error('Error tracking meeting_scheduled event:', trackResponse.status, errorData)
+        } else {
+          console.log('meeting_scheduled event tracked successfully')
+        }
       } catch (trackError) {
         console.error('Error tracking meeting_scheduled event:', trackError)
         // Don't throw - tracking shouldn't break the flow
