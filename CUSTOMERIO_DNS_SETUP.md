@@ -67,3 +67,6 @@ If your domain is registered with another provider (Namecheap, GoDaddy, Cloudfla
 - If you're using a subdomain (e.g., `mail.yourdomain.com`), add records for that subdomain
 - After adding records, use Customer.io's verification tool to check status
 
+
+
+

@@ -66,6 +66,29 @@ export async function POST(request: NextRequest) {
     } else {
       console.log('Processing events for userId:', userId)
 
+      // Retrieve line items to get product name
+      let productName = 'Consulting Session' // Default fallback
+      let price = session.amount_total || 0
+      
+      try {
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+          limit: 1,
+        })
+        if (lineItems.data.length > 0 && lineItems.data[0].description) {
+          productName = lineItems.data[0].description
+        } else if (lineItems.data.length > 0 && lineItems.data[0].price?.product) {
+          const product = await stripe.products.retrieve(
+            typeof lineItems.data[0].price.product === 'string'
+              ? lineItems.data[0].price.product
+              : lineItems.data[0].price.product.id
+          )
+          productName = product.name
+        }
+      } catch (err) {
+        console.error('Error retrieving product details:', err)
+        // Use default product name if retrieval fails
+      }
+
       // Track events
       try {
         await trackEvent(userId, 'payment_completed', {
@@ -88,6 +111,19 @@ export async function POST(request: NextRequest) {
         console.error('Error tracking session_purchased:', err)
       }
 
+      try {
+        await trackEvent(userId, 'order_completed', {
+          session_id: session.id,
+          product_name: productName,
+          price: price,
+          price_formatted: `$${(price / 100).toFixed(2)}`,
+          currency: session.currency || 'usd',
+        })
+        console.log('order_completed event tracked')
+      } catch (err) {
+        console.error('Error tracking order_completed:', err)
+      }
+
       // Log to audit table
       try {
         await logAuditEvent(userId, 'payment_completed', {
@@ -96,6 +132,11 @@ export async function POST(request: NextRequest) {
         })
         await logAuditEvent(userId, 'session_purchased', {
           session_id: session.id,
+        })
+        await logAuditEvent(userId, 'order_completed', {
+          session_id: session.id,
+          product_name: productName,
+          price: price,
         })
         console.log('Audit events logged')
       } catch (err) {
