@@ -92,9 +92,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Redirect directly to dashboard with session_id
-    // Dashboard will handle payment verification and session restoration
-    return NextResponse.redirect(new URL(`/dashboard?stripe_session=${sessionId}`, request.url))
+    // Set a temporary cookie to allow dashboard access
+    // This cookie will be checked by middleware to bypass auth temporarily
+    const response = NextResponse.redirect(new URL(`/dashboard?stripe_session=${sessionId}`, request.url))
+    
+    // Set temporary access cookie (expires in 5 minutes)
+    response.cookies.set('stripe_temp_access', userId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 300, // 5 minutes
+      path: '/',
+    })
+    
+    return response
   } catch (error) {
     console.error('Error processing Stripe callback:', error)
     // Redirect to purchase page on error
