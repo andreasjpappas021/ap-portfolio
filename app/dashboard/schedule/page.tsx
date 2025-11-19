@@ -27,9 +27,17 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
       // Verify the session with Stripe
       const session = await stripe.checkout.sessions.retrieve(sessionId)
       
-      // Auto-approve if payment is paid OR if in test mode (livemode === false)
+      // Auto-approve if:
+      // 1. Payment status is 'paid' OR
+      // 2. Checkout session status is 'complete' (successful checkout) OR
+      // 3. In test mode (livemode === false) - auto-approve all test payments
+      const isSuccessfulCheckout = 
+        session.payment_status === 'paid' || 
+        session.status === 'complete' ||
+        (session.payment_status === 'paid' && session.status === 'complete')
+      
       const shouldApprove = 
-        (session.payment_status === 'paid' && session.metadata?.userId === user.id) ||
+        (isSuccessfulCheckout && session.metadata?.userId === user.id) ||
         (session.livemode === false && session.metadata?.userId === user.id)
       
       if (shouldApprove) {
