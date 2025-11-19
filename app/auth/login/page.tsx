@@ -11,9 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(searchParams.get('email') || '')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  
+  // Show a message if coming from Stripe payment
+  const stripeSession = searchParams.get('stripe_session')
+  const paymentSuccessMessage = stripeSession ? {
+    type: 'success' as const,
+    text: 'Payment successful! Please sign in to access your dashboard.'
+  } : null
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,6 +78,12 @@ function LoginForm() {
               />
             </div>
 
+            {paymentSuccessMessage && (
+              <div className="p-3 rounded-md text-sm bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                {paymentSuccessMessage.text}
+              </div>
+            )}
+            
             {message && (
               <div
                 className={`p-3 rounded-md text-sm ${
