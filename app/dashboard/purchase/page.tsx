@@ -10,10 +10,40 @@ export default function PurchasePage() {
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
-    // Track clicks continue to payment event
+    // Track clicks continue to payment event (client-side)
     track('clicks_continue_to_payment', {
       page: '/dashboard/purchase',
     })
+
+    // Also track server-side if user is authenticated
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Track server-side for audit logging
+        await fetch('/api/customerio/track', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            eventName: 'clicks_continue_to_payment',
+            data: {
+              page: '/dashboard/purchase',
+            },
+          }),
+        }).catch(err => {
+          console.error('Error tracking clicks_continue_to_payment server-side:', err)
+          // Don't block checkout if tracking fails
+        })
+      }
+    } catch (err) {
+      console.error('Error getting user for tracking:', err)
+      // Continue with checkout even if tracking fails
+    }
 
     setLoading(true)
     try {
