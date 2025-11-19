@@ -79,10 +79,13 @@ export async function middleware(request: NextRequest) {
     // Protect dashboard routes
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
       if (!user) {
-        // Allow access if there's a stripe_session param (will be handled by dashboard page)
+        // Check for temporary Stripe access cookie
+        const tempAccessCookie = request.cookies.get('stripe_temp_access')
         const stripeSession = request.nextUrl.searchParams.get('stripe_session')
-        if (stripeSession) {
-          // Let the dashboard page handle the Stripe session and redirect appropriately
+        
+        // Allow access if we have both the temp cookie and stripe_session param
+        // Dashboard page will verify the session matches
+        if (tempAccessCookie && stripeSession) {
           return NextResponse.next()
         }
         
