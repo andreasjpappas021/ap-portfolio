@@ -23,12 +23,12 @@ export async function trackEvent(
   data?: Record<string, unknown>
 ): Promise<void> {
   const apiKey = process.env.CIO_API_KEY
-  const siteId = process.env.CIO_SITE_ID
+  const siteId = process.env.NEXT_PUBLIC_CIO_SITE_ID || process.env.CIO_SITE_ID
 
   if (!apiKey || !siteId) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
-        '[Customer.io] Missing CIO_API_KEY or CIO_SITE_ID. Event not sent:',
+        '[Customer.io] Missing CIO_API_KEY or site ID. Event not sent:',
         eventName
       )
     }
@@ -72,12 +72,12 @@ export async function identifyUser(
   attributes: CustomerIOAttributes
 ): Promise<void> {
   const apiKey = process.env.CIO_API_KEY
-  const siteId = process.env.CIO_SITE_ID
+  const siteId = process.env.NEXT_PUBLIC_CIO_SITE_ID || process.env.CIO_SITE_ID
 
   if (!apiKey || !siteId) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
-        '[Customer.io] Missing CIO_API_KEY or CIO_SITE_ID. User not identified.'
+        '[Customer.io] Missing CIO_API_KEY or site ID. User not identified.'
       )
     }
     return
@@ -118,12 +118,12 @@ export async function sendTransactionalEmail(
   data?: Record<string, unknown>
 ): Promise<void> {
   const apiKey = process.env.CIO_API_KEY
-  const siteId = process.env.CIO_SITE_ID
+  const siteId = process.env.NEXT_PUBLIC_CIO_SITE_ID || process.env.CIO_SITE_ID
 
   if (!apiKey || !siteId) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
-        '[Customer.io] Missing CIO_API_KEY or CIO_SITE_ID. Transactional email not sent.'
+        '[Customer.io] Missing CIO_API_KEY or site ID. Transactional email not sent.'
       )
     }
     return
