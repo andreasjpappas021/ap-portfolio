@@ -4,11 +4,17 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check } from 'lucide-react'
+import { track } from '@/lib/customerio'
 
 export default function PurchasePage() {
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
+    // Track clicks continue to payment event
+    track('clicks_continue_to_payment', {
+      page: '/dashboard/purchase',
+    })
+
     setLoading(true)
     try {
       const response = await fetch('/api/stripe/checkout', {

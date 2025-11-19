@@ -18,48 +18,72 @@ export async function middleware(request: NextRequest) {
       request,
     })
 
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
+    let supabase
+    try {
+      supabase = createServerClient(
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+          cookies: {
+            getAll() {
+              try {
+                return request.cookies.getAll()
+              } catch (error) {
+                console.error('[Middleware] Error getting cookies:', error)
+                return []
+              }
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  request.cookies.set(name, value)
+                )
+                supabaseResponse = NextResponse.next({
+                  request,
+                })
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  supabaseResponse.cookies.set(name, value, options)
+                )
+              } catch (error) {
+                console.error('[Middleware] Error setting cookies:', error)
+              }
+            },
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              request.cookies.set(name, value)
-            )
-            supabaseResponse = NextResponse.next({
-              request,
-            })
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
+        }
+      )
+    } catch (error) {
+      console.error('[Middleware] Error creating Supabase client:', error)
+      // If client creation fails, continue without auth
+      return NextResponse.next()
+    }
 
     // Refresh session if expired
     let user = null
-    try {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      user = authUser
-    } catch (error) {
-      // If getUser fails, continue without user (graceful degradation)
-      console.error('[Middleware] Error getting user:', error)
+    if (supabase) {
+      try {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser()
+        user = authUser
+      } catch (error) {
+        // If getUser fails, continue without user (graceful degradation)
+        console.error('[Middleware] Error getting user:', error)
+      }
     }
 
     // Protect dashboard routes
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
       if (!user) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/auth/login'
-        url.searchParams.set('redirect', request.nextUrl.pathname)
-        return NextResponse.redirect(url)
+        try {
+          const url = request.nextUrl.clone()
+          url.pathname = '/auth/login'
+          url.searchParams.set('redirect', request.nextUrl.pathname)
+          return NextResponse.redirect(url)
+        } catch (error) {
+          console.error('[Middleware] Error creating redirect URL:', error)
+          // If redirect fails, continue to dashboard (will show error page)
+          return NextResponse.next()
+        }
       }
     }
 
@@ -69,9 +93,15 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/auth/register')
     ) {
       if (user) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
+        try {
+          const url = request.nextUrl.clone()
+          url.pathname = '/dashboard'
+          return NextResponse.redirect(url)
+        } catch (error) {
+          console.error('[Middleware] Error creating redirect URL:', error)
+          // If redirect fails, continue to auth page
+          return NextResponse.next()
+        }
       }
     }
 
