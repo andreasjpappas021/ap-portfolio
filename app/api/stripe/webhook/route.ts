@@ -147,10 +147,14 @@ export async function POST(request: NextRequest) {
       try {
         await sendTransactionalEmail(
           userId,
-          'payment_success', // This should be your actual transactional message ID in Customer.io
+          'order_completed',
           {
             session_id: session.id,
+            product_name: productName,
+            price: price,
+            price_formatted: `$${(price / 100).toFixed(2)}`,
             amount: (session.amount_total || 0) / 100,
+            currency: session.currency || 'usd',
           }
         )
         console.log('Transactional email sent')

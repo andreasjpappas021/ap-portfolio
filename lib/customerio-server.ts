@@ -3,6 +3,9 @@
  * Sends events via Customer.io REST API
  */
 
+import { APIClient, SendEmailRequest } from 'customerio-node'
+import { createAdminClient } from '@/lib/supabase/admin'
+
 type CustomerIOEvent = {
   name: string
   data?: Record<string, unknown>
@@ -110,7 +113,8 @@ export async function identifyUser(
 }
 
 /**
- * Send a transactional email via Customer.io
+ * Send a transactional email via Customer.io App API
+ * Uses the App API (separate from Track API) for transactional messages
  */
 export async function sendTransactionalEmail(
   userId: string,
@@ -118,43 +122,58 @@ export async function sendTransactionalEmail(
   data?: Record<string, unknown>
 ): Promise<void> {
   const apiKey = process.env.CIO_API_KEY
-  const siteId = process.env.NEXT_PUBLIC_CIO_SITE_ID || process.env.CIO_SITE_ID
 
-  if (!apiKey || !siteId) {
+  if (!apiKey) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
-        '[Customer.io] Missing CIO_API_KEY or site ID. Transactional email not sent.'
+        '[Customer.io] Missing CIO_API_KEY. Transactional email not sent.'
       )
     }
     return
   }
 
   try {
-    const response = await fetch(
-      `https://track.customer.io/api/v1/customers/${userId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${Buffer.from(`${siteId}:${apiKey}`).toString('base64')}`,
-        },
-        body: JSON.stringify({
-          transactional_message_id: transactionalId,
-          message_data: data || {},
-        }),
-      }
-    )
+    // Fetch user email from Supabase
+    const adminSupabase = createAdminClient()
+    const { data: user, error: userError } = await adminSupabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single()
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(
-        `Customer.io API error: ${response.status} ${errorText}`
-      )
+    if (userError || !user?.email) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(
+          '[Customer.io] Error fetching user email:',
+          userError || 'User not found'
+        )
+      }
+      return
     }
-  } catch (error) {
+
+    // Initialize Customer.io App API client
+    const client = new APIClient(apiKey)
+
+    // Create send email request
+    const request = new SendEmailRequest({
+      transactional_message_id: transactionalId,
+      identifiers: {
+        id: userId,
+      },
+      to: user.email,
+      message_data: data || {},
+    })
+
+    // Send the email
+    await client.sendEmail(request)
+  } catch (error: any) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('[Customer.io] Error sending transactional email:', error)
+      if (error.statusCode) {
+        console.error(`Status: ${error.statusCode}, Message: ${error.message}`)
+      }
     }
+    // Don't throw - we don't want to break the app if Customer.io is down
   }
 }
 
