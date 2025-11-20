@@ -71,10 +71,12 @@ For local development, use Stripe CLI to forward webhooks:
 
 Add these to your `.env.local`:
 ```env
-NEXT_PUBLIC_CIO_JS_KEY=your-js-site-id-here
-CIO_API_KEY=your-app-api-key-here
-CIO_SITE_ID=your-site-id-here
-NEXT_PUBLIC_CIO_ANON_INAPP=false
+CIO_SITE_ID=15cdbba0967ea9daef00
+NEXT_PUBLIC_CIO_ANON_INAPP=true
+CIO_API_KEY=6ba527a207f6c17342f1
+NEXT_PUBLIC_CIO_SITE_ID=15cdbba0967ea9daef00
+NEXT_PUBLIC_CIO_JS_KEY=c2de94a64750a9c44a29
+CIO_APP_API_KEY=29edb66b6455e715eb9b5b7200f5d423 
 ```
 
 **Note:** If you want to enable in-app messages, set `NEXT_PUBLIC_CIO_ANON_INAPP=true`

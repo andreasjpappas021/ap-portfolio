@@ -3,7 +3,6 @@
  * Sends events via Customer.io REST API
  */
 
-import { APIClient, SendEmailRequest } from 'customerio-node'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 type CustomerIOEvent = {
@@ -121,16 +120,21 @@ export async function sendTransactionalEmail(
   transactionalId: string,
   data?: Record<string, unknown>
 ): Promise<void> {
-  const apiKey = process.env.CIO_API_KEY
+  const appApiKey = process.env.CIO_APP_API_KEY
 
-  if (!apiKey) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(
-        '[Customer.io] Missing CIO_API_KEY. Transactional email not sent.'
-      )
-    }
+  if (!appApiKey) {
+    console.warn(
+      '[Customer.io] Missing CIO_APP_API_KEY. Transactional email not sent.'
+    )
+    console.warn('[Customer.io] Debug: CIO_APP_API_KEY is', appApiKey ? 'set' : 'undefined')
     return
   }
+
+  console.log('[Customer.io] Sending transactional email:', {
+    userId,
+    transactionalId,
+    hasData: !!data,
+  })
 
   try {
     // Fetch user email from Supabase
@@ -142,36 +146,51 @@ export async function sendTransactionalEmail(
       .single()
 
     if (userError || !user?.email) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error(
-          '[Customer.io] Error fetching user email:',
-          userError || 'User not found'
-        )
-      }
+      console.error(
+        '[Customer.io] Error fetching user email:',
+        userError || 'User not found',
+        'User ID:',
+        userId
+      )
       return
     }
 
-    // Initialize Customer.io App API client
-    const client = new APIClient(apiKey)
+    console.log('[Customer.io] Found user email:', user.email)
 
-    // Create send email request
-    const request = new SendEmailRequest({
-      transactional_message_id: transactionalId,
-      identifiers: {
-        id: userId,
+    // Send transactional email via Customer.io App API
+    console.log('[Customer.io] Sending email request to Customer.io App API...')
+    const response = await fetch('https://api.customer.io/v1/send/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${appApiKey}`,
       },
-      to: user.email,
-      message_data: data || {},
+      body: JSON.stringify({
+        transactional_message_id: transactionalId,
+        identifiers: {
+          id: userId,
+        },
+        to: user.email,
+        message_data: data || {},
+      }),
     })
 
-    // Send the email
-    await client.sendEmail(request)
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(
+        `Customer.io App API error: ${response.status} ${errorText}`
+      )
+    }
+
+    const result = await response.json()
+    console.log('[Customer.io] ✅ Transactional email sent successfully:', result)
   } catch (error: any) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('[Customer.io] Error sending transactional email:', error)
-      if (error.statusCode) {
-        console.error(`Status: ${error.statusCode}, Message: ${error.message}`)
-      }
+    console.error('[Customer.io] ❌ Error sending transactional email:', error)
+    if (error.statusCode) {
+      console.error(`[Customer.io] Status: ${error.statusCode}, Message: ${error.message}`)
+    }
+    if (error.response) {
+      console.error('[Customer.io] Response:', error.response)
     }
     // Don't throw - we don't want to break the app if Customer.io is down
   }
