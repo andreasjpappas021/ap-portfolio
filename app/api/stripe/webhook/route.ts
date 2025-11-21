@@ -7,15 +7,19 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
+  console.log('[Webhook] ⚡ Stripe webhook received!')
   const body = await request.text()
   const signature = (await headers()).get('stripe-signature')
 
   if (!signature) {
+    console.error('[Webhook] ❌ No signature found')
     return NextResponse.json(
       { error: 'No signature' },
       { status: 400 }
     )
   }
+
+  console.log('[Webhook] ✅ Signature found, verifying...')
 
   let event: Stripe.Event
 
@@ -36,10 +40,11 @@ export async function POST(request: NextRequest) {
   const supabase = createAdminClient()
 
   // Handle the event
+  console.log('[Webhook] Event type:', event.type)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
 
-    console.log('Processing checkout.session.completed for session:', session.id)
+    console.log('[Webhook] ✅ Processing checkout.session.completed for session:', session.id)
 
     // Update session purchase status to paid
     const { data: purchase, error: updateError } = await supabase
@@ -144,18 +149,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Send transactional email
+      console.log('[Webhook] Attempting to send transactional email for userId:', userId)
       try {
         await sendTransactionalEmail(
           userId,
-          'payment_success', // This should be your actual transactional message ID in Customer.io
+          'order_completed',
           {
             session_id: session.id,
+            product_name: productName,
+            price: price,
+            price_formatted: `$${(price / 100).toFixed(2)}`,
             amount: (session.amount_total || 0) / 100,
+            currency: session.currency || 'usd',
           }
         )
-        console.log('Transactional email sent')
+        console.log('[Webhook] ✅ Transactional email function completed')
       } catch (err) {
-        console.error('Error sending transactional email:', err)
+        console.error('[Webhook] ❌ Error sending transactional email:', err)
       }
     }
   }

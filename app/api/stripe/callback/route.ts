@@ -1,6 +1,6 @@
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { trackEvent } from '@/lib/customerio-server'
+import { trackEvent, sendTransactionalEmail } from '@/lib/customerio-server'
 import { logAuditEvent } from '@/lib/audit'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -86,6 +86,26 @@ export async function GET(request: NextRequest) {
             price: price,
           })
           console.log('order_completed event tracked (callback)')
+
+          // Send transactional email
+          try {
+            console.log('[Callback] Attempting to send transactional email for userId:', userId)
+            await sendTransactionalEmail(
+              userId,
+              'order_completed',
+              {
+                session_id: sessionId,
+                product_name: productName,
+                price: price,
+                price_formatted: `$${(price / 100).toFixed(2)}`,
+                amount: (session.amount_total || 0) / 100,
+                currency: session.currency || 'usd',
+              }
+            )
+            console.log('[Callback] ✅ Transactional email function completed')
+          } catch (err) {
+            console.error('[Callback] ❌ Error sending transactional email:', err)
+          }
         } catch (err) {
           console.error('Error tracking order_completed event:', err)
         }

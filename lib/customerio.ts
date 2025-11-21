@@ -15,23 +15,18 @@ type Attributes = Record<string, unknown>
 // Debug helper to check Customer.io status (dev only)
 export function debugCustomerIO() {
   if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
-    // Check if script tag exists
-    const scriptTag = document.getElementById('customerio-website-source')
-    
-    console.log('[Customer.io Debug]', {
-      exists: !!window.cioanalytics,
-      isArray: Array.isArray(window.cioanalytics),
-      type: typeof window.cioanalytics,
-      hasTrack: window.cioanalytics && 'track' in window.cioanalytics,
-      trackType: window.cioanalytics && typeof (window.cioanalytics as any).track,
-      queueLength: Array.isArray(window.cioanalytics) ? window.cioanalytics.length : 'N/A',
-      scriptTagExists: !!scriptTag,
-      scriptTagSrc: scriptTag?.getAttribute('src') || 'N/A (inline script)',
-    })
+    const cio = window.cioanalytics
+    const debugInfo = {
+      initialized: cio && !Array.isArray(cio),
+      isArray: Array.isArray(cio),
+      hasIdentify: cio && typeof cio.identify === 'function',
+    }
+    console.log('[Customer.io Debug]', debugInfo)
+    return debugInfo
   }
 }
 
-export function identify(attributes: Attributes) {
+export function identify(attributes: Attributes & { id?: string }) {
   try {
     if (typeof window === 'undefined') {
       if (process.env.NODE_ENV !== 'production') {
@@ -47,13 +42,32 @@ export function identify(attributes: Attributes) {
       return
     }
 
+    // Extract id from attributes - Customer.io requires userId as first parameter
+    const userId = attributes.id
+    if (!userId) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[Customer.io] identify() called without id. In-app messages require user identification.')
+      }
+      return
+    }
+
+    // Create attributes object without id
+    const attrs = { ...attributes }
+    delete attrs.id
+
     // Handle queue pattern (pre-initialization) - cioanalytics is an array
+    // Analytics.js format: ['identify', userId, traits]
     if (Array.isArray(window.cioanalytics)) {
-      window.cioanalytics.push(['identify', attributes])
+      window.cioanalytics.push(['identify', userId, attrs])
     }
     // Handle initialized state - cioanalytics is an object with methods
+    // Customer.io format: identify(userId, attributes)
     else if (typeof window.cioanalytics.identify === 'function') {
-      window.cioanalytics.identify(attributes)
+      window.cioanalytics.identify(userId, attrs)
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Customer.io] User identified:', userId)
     }
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
