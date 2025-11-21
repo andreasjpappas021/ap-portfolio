@@ -8,7 +8,7 @@ export default function CustomerIOProvider() {
   const pathname = usePathname()
 
   useEffect(() => {
-    // Just track page views - no gate/redirect logic
+    // Track page views for in-app message targeting
     page({ path: pathname || '/' })
   }, [pathname])
 
