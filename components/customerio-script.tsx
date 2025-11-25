@@ -10,10 +10,24 @@ export default function CustomerIOScript() {
     const cioCdpApiKey = process.env.NEXT_PUBLIC_CIO_JS_KEY // This should be the CDP API Key
     const enableAnonInApp = process.env.NEXT_PUBLIC_CIO_ANON_INAPP === 'true'
 
+    // Log environment check (helpful for debugging production issues)
+    console.log('[Customer.io] Environment check:', {
+      hasCdpKey: !!cioCdpApiKey,
+      hasSiteId: !!cioSiteId,
+      enableAnonInApp,
+      env: process.env.NODE_ENV,
+      cdpKeyLength: cioCdpApiKey?.length || 0,
+      siteIdLength: cioSiteId?.length || 0,
+    })
+
     if (!cioCdpApiKey || !cioSiteId) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[Customer.io] Missing configuration. Check NEXT_PUBLIC_CIO_JS_KEY and NEXT_PUBLIC_CIO_SITE_ID')
-      }
+      console.error('[Customer.io] ❌ Missing configuration. Check NEXT_PUBLIC_CIO_JS_KEY and NEXT_PUBLIC_CIO_SITE_ID', {
+        hasCdpKey: !!cioCdpApiKey,
+        hasSiteId: !!cioSiteId,
+        cdpKeyValue: cioCdpApiKey ? `${cioCdpApiKey.substring(0, 4)}...` : 'undefined',
+        siteIdValue: cioSiteId || 'undefined',
+        nodeEnv: process.env.NODE_ENV,
+      })
       return
     }
 
@@ -46,10 +60,19 @@ export default function CustomerIOScript() {
       const fullScript = baseSnippet + loadCall + pageCall + `}}();`
       
       eval(fullScript)
+      console.log('[Customer.io] ✅ Script executed successfully', {
+        cdpKey: `${cioCdpApiKey.substring(0, 4)}...`,
+        siteId: cioSiteId,
+        enableAnonInApp,
+      })
     } catch (error: any) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('[Customer.io] Error executing script:', error)
-      }
+      console.error('[Customer.io] ❌ Error executing script:', error)
+      console.error('[Customer.io] Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        cdpKey: cioCdpApiKey ? `${cioCdpApiKey.substring(0, 4)}...` : 'missing',
+        siteId: cioSiteId || 'missing',
+      })
     }
   }, [])
 
