@@ -29,25 +29,19 @@ export function debugCustomerIO() {
 export function identify(attributes: Attributes & { id?: string }) {
   try {
     if (typeof window === 'undefined') {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[Customer.io] identify() called on server side')
-      }
+      console.warn('[Customer.io] identify() called on server side')
       return
     }
 
     if (!window.cioanalytics) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[Customer.io] cioanalytics not found. Identify not called')
-      }
+      console.warn('[Customer.io] cioanalytics not found. Identify not called')
       return
     }
 
     // Extract id from attributes - Customer.io requires userId as first parameter
     const userId = attributes.id
     if (!userId) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[Customer.io] identify() called without id. In-app messages require user identification.')
-      }
+      console.warn('[Customer.io] identify() called without id. In-app messages require user identification.')
       return
     }
 
@@ -59,20 +53,21 @@ export function identify(attributes: Attributes & { id?: string }) {
     // Analytics.js format: ['identify', userId, traits]
     if (Array.isArray(window.cioanalytics)) {
       window.cioanalytics.push(['identify', userId, attrs])
+      console.log('[Customer.io] User identification queued:', { userId, attributes: attrs })
     }
     // Handle initialized state - cioanalytics is an object with methods
     // Customer.io format: identify(userId, attributes)
     else if (typeof window.cioanalytics.identify === 'function') {
       window.cioanalytics.identify(userId, attrs)
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[Customer.io] User identified:', userId)
+      console.log('[Customer.io] User identified:', { userId, email: attrs.email, attributes: attrs })
+    } else {
+      console.warn('[Customer.io] cioanalytics.identify is not a function', {
+        cioanalytics: window.cioanalytics,
+        type: typeof window.cioanalytics,
+      })
     }
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('[Customer.io] Error identifying user:', error, attributes)
-    }
+    console.error('[Customer.io] Error identifying user:', error, attributes)
   }
 }
 
@@ -82,13 +77,21 @@ export function page(properties?: Attributes) {
       // Handle queue pattern (pre-initialization) - cioanalytics is an array
       if (Array.isArray(window.cioanalytics)) {
         window.cioanalytics.push(['page', properties ?? {}])
+        console.log('[Customer.io] Page tracking queued:', properties)
       }
       // Handle initialized state - cioanalytics is an object with methods
       else if (typeof window.cioanalytics.page === 'function') {
         window.cioanalytics.page(properties ?? {})
+        console.log('[Customer.io] Page tracked:', properties)
+      } else {
+        console.warn('[Customer.io] cioanalytics.page is not a function')
       }
+    } else {
+      console.warn('[Customer.io] Cannot track page - cioanalytics not available')
     }
-  } catch (_) {}
+  } catch (error) {
+    console.error('[Customer.io] Error tracking page:', error, properties)
+  }
 }
 
 export function track(eventName: string, properties?: Attributes) {
