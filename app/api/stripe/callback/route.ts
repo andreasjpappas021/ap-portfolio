@@ -3,14 +3,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { trackEvent, sendTransactionalEmail } from '@/lib/customerio-server'
 import { logAuditEvent } from '@/lib/audit'
+import { getAppUrl } from '@/lib/app-url'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const sessionId = searchParams.get('session_id')
+  const appUrl = getAppUrl()
 
   if (!sessionId) {
-    return NextResponse.redirect(new URL('/dashboard/purchase', request.url))
+    return NextResponse.redirect(new URL('/dashboard/purchase', appUrl))
   }
 
   try {
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     if (!session.metadata?.userId) {
       console.error('No userId in session metadata')
-      return NextResponse.redirect(new URL('/dashboard/purchase', request.url))
+      return NextResponse.redirect(new URL('/dashboard/purchase', appUrl))
     }
 
     const userId = session.metadata.userId
@@ -124,8 +126,6 @@ export async function GET(request: NextRequest) {
     // If user is still authenticated, redirect directly to dashboard
     // Otherwise, set temporary cookie and redirect (dashboard will handle login flow)
     // Use proper app URL instead of request.url to avoid Vercel preview URL issues
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const dashboardUrl = new URL(`/dashboard?stripe_session=${sessionId}`, appUrl)
     const response = NextResponse.redirect(dashboardUrl)
     
@@ -145,8 +145,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error processing Stripe callback:', error)
     // Redirect to purchase page on error - use proper app URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     return NextResponse.redirect(new URL('/dashboard/purchase', appUrl))
   }
 }

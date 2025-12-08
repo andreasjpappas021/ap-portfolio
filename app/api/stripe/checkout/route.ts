@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
+import { getAppUrl } from '@/lib/app-url'
 import { NextResponse } from 'next/server'
 
 export async function POST() {
@@ -35,8 +36,7 @@ export async function POST() {
       throw new Error('STRIPE_SUBSCRIPTION_PRICE_ID is not configured')
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const appUrl = getAppUrl()
 
     // Create Stripe Checkout session for subscription
     const session = await stripe.checkout.sessions.create({
