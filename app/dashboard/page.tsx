@@ -4,10 +4,11 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { CheckCircle2, Clock, Calendar, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock, Calendar, XCircle, X } from 'lucide-react'
 import { trackEvent } from '@/lib/customerio-server'
 import { logAuditEvent } from '@/lib/audit'
 import SessionPrepForm from '@/components/SessionPrepForm'
+import SubscriptionHistory from '@/components/SubscriptionHistory'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -79,13 +80,68 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       if (shouldApprove) {
         // Update purchase status if not already paid (fallback if webhook didn't process)
         const adminSupabase = createAdminClient()
-        const { data: updatedPurchase } = await adminSupabase
+        
+        // Prepare update data
+        const updateData: {
+          status: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          subscription_status?: string
+        } = {
+          status: 'paid',
+        }
+        
+        // If this is a subscription checkout, extract subscription details
+        if (session.mode === 'subscription') {
+          if (session.customer) {
+            updateData.stripe_customer_id = typeof session.customer === 'string' 
+              ? session.customer 
+              : session.customer.id
+          }
+          if (session.subscription) {
+            const subscriptionId = typeof session.subscription === 'string'
+              ? session.subscription
+              : session.subscription.id
+            updateData.stripe_subscription_id = subscriptionId
+            updateData.subscription_status = 'active'
+          }
+        } else if (session.customer) {
+          // For one-time payments, still set customer_id
+          updateData.stripe_customer_id = typeof session.customer === 'string'
+            ? session.customer
+            : session.customer.id
+        }
+        
+        // First try to update pending purchases
+        let { data: updatedPurchase } = await adminSupabase
           .from('session_purchases')
-          .update({ status: 'paid' })
+          .update(updateData)
           .eq('stripe_session_id', sessionId)
           .eq('status', 'pending')
           .select()
           .single()
+        
+        // If no pending purchase was updated, try to update paid purchases that are missing subscription fields
+        if (!updatedPurchase && session.mode === 'subscription') {
+          const { data: existingPurchase } = await adminSupabase
+            .from('session_purchases')
+            .select('*')
+            .eq('stripe_session_id', sessionId)
+            .eq('status', 'paid')
+            .single()
+          
+          // Update if missing subscription fields
+          if (existingPurchase && (!existingPurchase.stripe_subscription_id || !existingPurchase.stripe_customer_id)) {
+            const { data: updated } = await adminSupabase
+              .from('session_purchases')
+              .update(updateData)
+              .eq('stripe_session_id', sessionId)
+              .eq('status', 'paid')
+              .select()
+              .single()
+            updatedPurchase = updated
+          }
+        }
 
         // If we successfully updated a pending purchase, track order_completed event
         if (updatedPurchase) {
@@ -145,6 +201,26 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .order('created_at', { ascending: false })
 
   const hasPaidSession = purchases?.some((p) => p.status === 'paid') || false
+  
+  // Check if user has an active (non-cancelled) subscription
+  // Treat null subscription_status as active if there's a subscription_id
+  const hasActiveSubscription = purchases?.some(
+    (p) => 
+      p.status === 'paid' && 
+      p.subscription_status !== 'cancelled' &&
+      (p.stripe_subscription_id !== null && p.stripe_subscription_id !== undefined)
+  ) || false
+
+  // Check if user has cancelled subscription but still has access (until period end)
+  // They can still schedule sessions during this period
+  const hasCancelledButActiveAccess = purchases?.some(
+    (p) => 
+      p.status === 'paid' && 
+      p.subscription_status === 'cancelled'
+  ) || false
+
+  // User can schedule if they have paid session (active or cancelled)
+  const canScheduleSession = hasPaidSession
 
   // Track dashboard view event
   await trackEvent(user.id, 'dashboard_viewed', {
@@ -214,20 +290,43 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Subscription Status */}
-              {hasPaidSession ? (
-                <div className="flex items-center gap-3 text-green-400">
-                  <CheckCircle2 className="w-6 h-6" />
-                  <div>
-                    <span className="font-semibold">Active Subscription</span>
-                    <p className="text-xs text-slate-400">Unlimited session scheduling</p>
+              {(() => {
+                // Check if subscription is cancelled
+                const isCancelled = purchases?.some(
+                  (p) => p.status === 'paid' && p.subscription_status === 'cancelled'
+                ) || false
+
+                if (isCancelled) {
+                  return (
+                    <div className="flex items-center gap-3 text-red-400">
+                      <X className="w-6 h-6" />
+                      <div>
+                        <span className="font-semibold">Cancelled Subscription</span>
+                        <p className="text-xs text-slate-400">Access continues until end of billing period</p>
+                      </div>
+                    </div>
+                  )
+                }
+
+                if (hasPaidSession) {
+                  return (
+                    <div className="flex items-center gap-3 text-green-400">
+                      <CheckCircle2 className="w-6 h-6" />
+                      <div>
+                        <span className="font-semibold">Active Subscription</span>
+                        <p className="text-xs text-slate-400">Unlimited session scheduling</p>
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <Clock className="w-6 h-6" />
+                    <span>No active subscription</span>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 text-slate-400">
-                  <Clock className="w-6 h-6" />
-                  <span>No active subscription</span>
-                </div>
-              )}
+                )
+              })()}
 
               {/* Upcoming Appointments */}
               {(() => {
@@ -269,38 +368,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
               {/* Purchase/Subscription History */}
               {purchases && purchases.length > 0 && (
-                <div className="space-y-2 pt-4 border-t border-slate-700">
-                  <p className="text-slate-400 text-sm font-semibold">
-                    Subscription History
-                  </p>
-                  {purchases.slice(0, 3).map((purchase) => (
-                    <div
-                      key={purchase.id}
-                      className="flex items-center justify-between p-2 bg-slate-700/50 rounded"
-                    >
-                      <span className="text-slate-300 text-sm">
-                        {new Date(purchase.created_at).toLocaleDateString()}
-                      </span>
-                      <span
-                        className={`text-sm ${
-                          purchase.status === 'paid'
-                            ? 'text-green-400'
-                            : purchase.status === 'pending'
-                            ? 'text-yellow-400'
-                            : 'text-red-400'
-                        }`}
-                      >
-                        {purchase.subscription_status === 'cancelled' 
-                          ? 'cancelled' 
-                          : purchase.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <SubscriptionHistory 
+                  purchases={purchases} 
+                  hasActiveSubscription={hasActiveSubscription}
+                />
               )}
 
               <div className="pt-4">
-                {hasPaidSession ? (
+                {canScheduleSession ? (
                   <Button asChild className="w-full">
                     <Link href="/dashboard/schedule">Schedule Session</Link>
                   </Button>

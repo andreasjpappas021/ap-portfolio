@@ -55,7 +55,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
     }
   }
 
-  // Check if user has a paid session
+  // Check if user has a paid session (includes cancelled subscriptions that still have access)
   const { data: purchases } = await supabase
     .from('session_purchases')
     .select('*')
@@ -63,16 +63,19 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
     .eq('status', 'paid')
 
   const hasPaidSession = purchases && purchases.length > 0
+  const isCancelled = purchases?.some((p) => p.subscription_status === 'cancelled') || false
 
   // Track session booking opened event
   await trackEvent(user.id, 'session_booking_opened', {
     has_paid_session: hasPaidSession,
+    is_cancelled: isCancelled,
   })
   await logAuditEvent(user.id, 'session_booking_opened', {
     has_paid_session: hasPaidSession,
+    is_cancelled: isCancelled,
   })
 
-  // Redirect if no paid session
+  // Redirect if no paid session (cancelled users can still schedule until period ends)
   if (!hasPaidSession) {
     redirect('/dashboard/purchase')
   }

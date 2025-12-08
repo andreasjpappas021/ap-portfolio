@@ -3,10 +3,21 @@ import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const user = await requireAuth()
     const supabase = await createClient()
+
+    // Get optional returnUrl from request body
+    let returnUrl = '/dashboard/settings'
+    try {
+      const body = await request.json()
+      if (body.returnUrl) {
+        returnUrl = body.returnUrl
+      }
+    } catch {
+      // If no body or invalid JSON, use default
+    }
 
     // Get the user's Stripe customer ID from their most recent purchase
     const { data: purchase } = await supabase
@@ -31,7 +42,7 @@ export async function POST() {
     // Create a Stripe Customer Portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: purchase.stripe_customer_id,
-      return_url: `${appUrl}/dashboard/settings`,
+      return_url: `${appUrl}${returnUrl}`,
     })
 
     return NextResponse.json({ url: portalSession.url })

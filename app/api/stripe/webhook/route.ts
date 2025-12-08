@@ -130,13 +130,29 @@ export async function POST(request: NextRequest) {
         console.error('Error tracking subscription_cancelled:', err)
       }
 
+      // Track user_churned event for Customer.io flows
+      try {
+        await trackEvent(targetUserId, 'user_churned', {
+          subscription_id: subscription.id,
+          cancelled_at: new Date().toISOString(),
+          cancelled_via: 'stripe_webhook',
+        })
+        console.log('user_churned event tracked')
+      } catch (err) {
+        console.error('Error tracking user_churned:', err)
+      }
+
       // Log audit event
       try {
         await logAuditEvent(targetUserId, 'subscription_cancelled', {
           subscription_id: subscription.id,
         })
+        await logAuditEvent(targetUserId, 'user_churned', {
+          subscription_id: subscription.id,
+          cancelled_at: new Date().toISOString(),
+        })
       } catch (err) {
-        console.error('Error logging subscription_cancelled audit:', err)
+        console.error('Error logging audit events:', err)
       }
     }
   }
@@ -149,12 +165,29 @@ export async function POST(request: NextRequest) {
 
     // For subscription mode, the subscription webhook handles the main logic
     // This handles any additional tracking and the pending status update
+    // Also extract subscription_id if this is a subscription checkout
+    const updateData: {
+      status: string
+      stripe_customer_id: string
+      stripe_subscription_id?: string
+      subscription_status?: string
+    } = {
+      status: 'paid',
+      stripe_customer_id: session.customer as string,
+    }
+
+    // If this is a subscription checkout, get the subscription ID
+    if (session.mode === 'subscription' && session.subscription) {
+      const subscriptionId = typeof session.subscription === 'string' 
+        ? session.subscription 
+        : session.subscription.id
+      updateData.stripe_subscription_id = subscriptionId
+      updateData.subscription_status = 'active'
+    }
+
     const { data: purchase, error: updateError } = await supabase
       .from('session_purchases')
-      .update({ 
-        status: 'paid',
-        stripe_customer_id: session.customer as string,
-      })
+      .update(updateData)
       .eq('stripe_session_id', session.id)
       .select()
       .single()
