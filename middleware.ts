@@ -71,9 +71,11 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Allow stripe-success page to handle session restoration without auth check
-    if (request.nextUrl.pathname === '/auth/stripe-success') {
-      return NextResponse.next()
+    // Allow auth callback and stripe-success page to handle session restoration without auth check
+    if (request.nextUrl.pathname === '/auth/callback' ||
+        request.nextUrl.pathname === '/auth/stripe-success' || 
+        request.nextUrl.pathname === '/api/stripe/callback') {
+      return supabaseResponse
     }
 
     // Protect dashboard routes
@@ -86,6 +88,12 @@ export async function middleware(request: NextRequest) {
         // Allow access if we have both the temp cookie and stripe_session param
         // Dashboard page will verify the session matches
         if (tempAccessCookie && stripeSession) {
+          return NextResponse.next()
+        }
+        
+        // Allow purchase page through - it's a client component that can handle auth
+        // This fixes IAM/email CTA clicks where user is logged in but middleware doesn't see session
+        if (request.nextUrl.pathname === '/dashboard/purchase') {
           return NextResponse.next()
         }
         

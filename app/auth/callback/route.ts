@@ -65,6 +65,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL(redirectTo, request.url))
+  // The exchangeCodeForSession should have set cookies via the Supabase client
+  // Create redirect response - cookies should already be set by Supabase SSR
+  const redirectUrl = new URL(redirectTo, request.url)
+  return NextResponse.redirect(redirectUrl)
 }
 

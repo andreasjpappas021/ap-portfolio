@@ -8,6 +8,28 @@ export async function POST() {
     const user = await requireAuth()
     const supabase = await createClient()
 
+    // Check if user already has an active subscription
+    const { data: purchases } = await supabase
+      .from('session_purchases')
+      .select('id, stripe_subscription_id, stripe_customer_id, subscription_status')
+      .eq('user_id', user.id)
+      .eq('status', 'paid')
+      .order('created_at', { ascending: false })
+
+    // Check if user has an active (non-cancelled) subscription
+    const hasActiveSubscription = purchases?.some(
+      (p) => 
+        p.subscription_status !== 'cancelled' &&
+        (p.stripe_subscription_id || p.stripe_customer_id)
+    )
+
+    if (hasActiveSubscription) {
+      return NextResponse.json(
+        { error: 'You already have an active subscription. Please cancel your current subscription before creating a new one.' },
+        { status: 400 }
+      )
+    }
+
     const priceId = process.env.STRIPE_SUBSCRIPTION_PRICE_ID
     if (!priceId) {
       throw new Error('STRIPE_SUBSCRIPTION_PRICE_ID is not configured')

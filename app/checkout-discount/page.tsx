@@ -39,7 +39,7 @@ export default function CheckoutDiscountPage() {
       }
     }
 
-    async function createCheckout() {
+    async function applyDiscount() {
       // Track the button click first
       await trackButtonClick()
 
@@ -54,26 +54,28 @@ export default function CheckoutDiscountPage() {
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to create checkout session')
+          throw new Error(data.error || 'Failed to apply discount')
         }
 
+        // If we got a URL, redirect to Stripe checkout (new subscription with discount)
         if (data.url) {
-          // Redirect to Stripe Checkout
           window.location.href = data.url
-        } else {
-          throw new Error('No checkout URL received')
+          return
         }
+
+        // Otherwise, discount was applied to existing subscription - redirect to dashboard
+        router.push('/dashboard?discount_applied=true')
       } catch (error: any) {
-        console.error('Checkout error:', error)
+        console.error('Discount application error:', error)
         setError(error.message || 'Something went wrong. Please try again.')
-        // Redirect to cancel page after a delay if there's an error
+        // Redirect to dashboard after a delay if there's an error
         setTimeout(() => {
-          router.push('/cancel')
+          router.push('/dashboard')
         }, 3000)
       }
     }
 
-    createCheckout()
+    applyDiscount()
   }, [router])
 
   if (error) {
@@ -91,7 +93,7 @@ export default function CheckoutDiscountPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
       <div className="text-center">
         <Loader2 className="w-8 h-8 text-white animate-spin mx-auto mb-4" />
-        <p className="text-white">Redirecting to checkout...</p>
+        <p className="text-white">Applying discount...</p>
       </div>
     </div>
   )

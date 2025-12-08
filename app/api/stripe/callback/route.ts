@@ -1,5 +1,6 @@
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { trackEvent, sendTransactionalEmail } from '@/lib/customerio-server'
 import { logAuditEvent } from '@/lib/audit'
 import { NextRequest, NextResponse } from 'next/server'
@@ -22,6 +23,14 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.metadata.userId
+
+    // Check if user still has a valid Supabase session
+    // This helps preserve authentication after Stripe redirect
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    
+    // If user session exists and matches the Stripe session userId, they're still logged in
+    const isAuthenticated = currentUser && currentUser.id === userId
 
     // Check if payment should be approved
     // Auto-approve if:
@@ -112,11 +121,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Set a temporary cookie to allow dashboard access
-    // This cookie will be checked by middleware to bypass auth temporarily
-    const response = NextResponse.redirect(new URL(`/dashboard?stripe_session=${sessionId}`, request.url))
+    // If user is still authenticated, redirect directly to dashboard
+    // Otherwise, set temporary cookie and redirect (dashboard will handle login flow)
+    // Use proper app URL instead of request.url to avoid Vercel preview URL issues
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const dashboardUrl = new URL(`/dashboard?stripe_session=${sessionId}`, appUrl)
+    const response = NextResponse.redirect(dashboardUrl)
     
-    // Set temporary access cookie (expires in 5 minutes)
+    // Always set temporary access cookie as a fallback (expires in 5 minutes)
+    // This allows dashboard to verify the session even if Supabase session is lost
     response.cookies.set('stripe_temp_access', userId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -125,10 +139,14 @@ export async function GET(request: NextRequest) {
       path: '/',
     })
     
+    // If user is authenticated, they should stay logged in
+    // If not, dashboard will redirect to login with email pre-filled
     return response
   } catch (error) {
     console.error('Error processing Stripe callback:', error)
-    // Redirect to purchase page on error
-    return NextResponse.redirect(new URL('/dashboard/purchase', request.url))
+    // Redirect to purchase page on error - use proper app URL
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    return NextResponse.redirect(new URL('/dashboard/purchase', appUrl))
   }
 }

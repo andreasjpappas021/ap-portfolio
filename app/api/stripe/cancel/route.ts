@@ -10,8 +10,7 @@ export async function POST() {
     const user = await requireAuth()
     const supabase = await createClient()
 
-    // Get the user's active subscription
-    // Include subscriptions with null subscription_status (treat as active if they have a subscription_id or customer_id)
+    // Get the user's paid purchases
     const { data: purchases } = await supabase
       .from('session_purchases')
       .select('id, stripe_subscription_id, stripe_customer_id, subscription_status')
@@ -19,42 +18,85 @@ export async function POST() {
       .eq('status', 'paid')
       .order('created_at', { ascending: false })
 
-    // Find the first non-cancelled subscription that has either subscription_id or customer_id
-    const purchase = purchases?.find(
+    let subscriptionId: string | undefined
+    let purchase = purchases?.find(
       (p) => 
         p.subscription_status !== 'cancelled' &&
-        (p.stripe_subscription_id || p.stripe_customer_id)
+        p.stripe_subscription_id
     )
 
-    // If we have a customer_id but no subscription_id, try to find the subscription from Stripe
-    let subscriptionId = purchase?.stripe_subscription_id
-    
-    if (!subscriptionId && purchase?.stripe_customer_id) {
-      try {
-        // List active subscriptions for this customer
-        const subscriptions = await stripe.subscriptions.list({
-          customer: purchase.stripe_customer_id,
-          status: 'active',
-          limit: 1,
-        })
-        
-        if (subscriptions.data.length > 0) {
-          subscriptionId = subscriptions.data[0].id
+    // If we found a purchase with subscription_id, use it
+    if (purchase?.stripe_subscription_id) {
+      subscriptionId = purchase.stripe_subscription_id
+    } else {
+      // Try to find a purchase with customer_id and check Stripe for active subscriptions
+      purchase = purchases?.find(
+        (p) => 
+          p.subscription_status !== 'cancelled' &&
+          p.stripe_customer_id
+      )
+
+      if (purchase?.stripe_customer_id) {
+        try {
+          // List active subscriptions for this customer from Stripe
+          const subscriptions = await stripe.subscriptions.list({
+            customer: purchase.stripe_customer_id,
+            status: 'active',
+            limit: 1,
+          })
           
-          // Update the purchase record with the subscription_id we found
-          await supabase
-            .from('session_purchases')
-            .update({ stripe_subscription_id: subscriptionId })
-            .eq('id', purchase.id)
+          if (subscriptions.data.length > 0) {
+            subscriptionId = subscriptions.data[0].id
+            
+            // Update the purchase record with the subscription_id we found
+            await supabase
+              .from('session_purchases')
+              .update({ stripe_subscription_id: subscriptionId })
+              .eq('id', purchase.id)
+          }
+        } catch (error) {
+          console.error('Error fetching subscription from Stripe:', error)
         }
-      } catch (error) {
-        console.error('Error fetching subscription from Stripe:', error)
+      }
+    }
+
+    // If still no subscription found, check all purchases for any customer_id and query Stripe
+    if (!subscriptionId && purchases && purchases.length > 0) {
+      // Get all unique customer IDs
+      const customerIds = purchases
+        .map(p => p.stripe_customer_id)
+        .filter((id): id is string => !!id)
+      
+      for (const customerId of customerIds) {
+        try {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'active',
+            limit: 1,
+          })
+          
+          if (subscriptions.data.length > 0) {
+            subscriptionId = subscriptions.data[0].id
+            
+            // Find the purchase for this customer and update it
+            purchase = purchases.find(p => p.stripe_customer_id === customerId)
+            if (purchase) {
+              await supabase
+                .from('session_purchases')
+                .update({ stripe_subscription_id: subscriptionId })
+                .eq('id', purchase.id)
+            }
+            break
+          }
+        } catch (error) {
+          console.error('Error fetching subscription from Stripe for customer:', customerId, error)
+        }
       }
     }
 
     if (!subscriptionId) {
       return NextResponse.json(
-        { error: 'No active subscription found' },
+        { error: 'No active subscription found. You may have already cancelled your subscription, or it may have expired.' },
         { status: 404 }
       )
     }
