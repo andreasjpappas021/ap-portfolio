@@ -2,9 +2,9 @@ import { requireAuth } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/app-url'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth()
     const supabase = await createClient()
@@ -36,7 +36,7 @@ export async function POST() {
       throw new Error('STRIPE_SUBSCRIPTION_PRICE_ID is not configured')
     }
 
-    const appUrl = getAppUrl()
+    const appUrl = getAppUrl(request)
 
     // Create Stripe Checkout session for subscription
     const session = await stripe.checkout.sessions.create({

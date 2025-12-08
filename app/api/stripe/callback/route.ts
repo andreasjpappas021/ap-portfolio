@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const sessionId = searchParams.get('session_id')
-  const appUrl = getAppUrl()
+  const appUrl = getAppUrl(request)
 
   if (!sessionId) {
     return NextResponse.redirect(new URL('/dashboard/purchase', appUrl))

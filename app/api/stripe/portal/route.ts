@@ -2,9 +2,9 @@ import { requireAuth } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/app-url'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth()
     const supabase = await createClient()
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const appUrl = getAppUrl()
+    const appUrl = getAppUrl(request)
 
     // Create a Stripe Customer Portal session
     const portalSession = await stripe.billingPortal.sessions.create({
