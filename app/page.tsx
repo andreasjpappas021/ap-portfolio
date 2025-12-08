@@ -3,8 +3,9 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ExternalLink, Mail, Play, User, Linkedin, Phone } from "lucide-react"
+import { ExternalLink, Mail, Play, User, Linkedin, Phone, Target, Compass, Briefcase, ArrowRight } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { track } from "@/lib/customerio"
 import AuthButton from "@/components/AuthButton"
 
@@ -215,86 +216,83 @@ export default function ResumePage() {
         </div>
       </section>
 
-      {/* By the Numbers Section */}
-      <section className="py-12 px-6 lg:px-24 bg-slate-800/50">
+      {/* Services Section */}
+      <section className="py-16 px-6 lg:px-24 bg-slate-800/50">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center space-y-4 mb-8">
+          <div className="text-center space-y-4 mb-12">
             <Badge variant="outline" className="w-fit mx-auto border-slate-600 text-slate-300 text-base px-4 py-2">
-              By the Numbers
+              Services
             </Badge>
+            <h2 className="text-3xl font-bold text-white">How I Can Help You</h2>
             <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              Quantified impact across key initiatives
+              Personalized coaching to accelerate your product career
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div>
-              <h3 className="text-3xl font-bold text-white">💰 $100k</h3>
-              <p className="text-slate-400 text-sm mt-1">Annual cost savings</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-white">📈 +1,150%</h3>
-              <p className="text-slate-400 text-sm mt-1">Conversion lift</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-white">🌍 +244%</h3>
-              <p className="text-slate-400 text-sm mt-1">DAU growth on live data</p>
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-white">📊 +15%</h3>
-              <p className="text-slate-400 text-sm mt-1">NPS increase</p>
-            </div>
-          </div>
-        </div>
-      </section>
+          
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {/* iPM Interview Coaching */}
+            <Card className="bg-slate-900/60 border-slate-700 hover:border-blue-500/50 transition-all duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Target className="w-7 h-7 text-blue-400" />
+                </div>
+                <CardTitle className="text-xl text-white">iPM Interview Coaching</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-slate-300 leading-relaxed">
+                  Nail your interviews at top tech companies. Get insider tips on product sense, 
+                  analytical skills, and how to stand out in competitive iPM programs.
+                </p>
+              </CardContent>
+            </Card>
 
-      {/* Questions I Ask Section */}
-      <section className="py-12 px-6 lg:px-24 bg-slate-900/40">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center space-y-4 mb-8">
-            <Badge variant="outline" className="w-fit mx-auto border-slate-600 text-slate-300 text-base px-4 py-2">
-              Stay Curious
-            </Badge>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              A few of the prompts I use to guide product discovery, align stakeholders, and focus execution.
-            </p>
+            {/* Product Management Coaching */}
+            <Card className="bg-slate-900/60 border-slate-700 hover:border-purple-500/50 transition-all duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <Briefcase className="w-7 h-7 text-purple-400" />
+                </div>
+                <CardTitle className="text-xl text-white">Product Management Coaching</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-slate-300 leading-relaxed">
+                  Level up your PM skills with hands-on guidance. From roadmap prioritization 
+                  to stakeholder management, develop the skills that drive real impact.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Career Coaching */}
+            <Card className="bg-slate-900/60 border-slate-700 hover:border-emerald-500/50 transition-all duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Compass className="w-7 h-7 text-emerald-400" />
+                </div>
+                <CardTitle className="text-xl text-white">Career Coaching</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-slate-300 leading-relaxed">
+                  Navigate your career path with confidence. Whether you're pivoting into product 
+                  or aiming for senior roles, get personalized strategies for growth.
+                </p>
+              </CardContent>
+            </Card>
           </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <ul className="space-y-4 text-slate-300">
-              <li className="flex gap-3">
-                <span className="text-blue-400">❓</span>
-                What decision are we unlocking with this work?
-              </li>
-              <li className="flex gap-3">
-                <span className="text-blue-400">📊</span>
-                How will we measure success?
-              </li>
-              <li className="flex gap-3">
-                <span className="text-blue-400">🧪</span>
-                What could falsify our assumption before we build?
-              </li>
-              <li className="flex gap-3">
-                <span className="text-blue-400">⚖️</span>
-                What gets worse if we ship this?
-              </li>
-            </ul>
-            <ul className="space-y-4 text-slate-300">
-              <li className="flex gap-3">
-                <span className="text-blue-400">🔬</span>
-                What's the smallest test that would show if this matters to users?
-              </li>
-              <li className="flex gap-3">
-                <span className="text-blue-400">⚡</span>
-                If this fails, how will we know quickly?
-              </li>
-              <li className="flex gap-3">
-                <span className="text-blue-400">👥</span>
-                Who needs to be in the loop to make this succeed?
-              </li>
-              <li className="flex gap-3">
-                <span className="text-blue-400">☕</span>
-                Did I have enough coffee before this meeting?
-              </li>
-            </ul>
+
+          {/* CTA */}
+          <div className="text-center">
+            <Link href="/auth/login">
+              <Button 
+                size="lg" 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg group"
+              >
+                Book a Coaching Session
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            <p className="text-slate-400 mt-4 text-sm">
+              Sign up to get started with personalized coaching
+            </p>
           </div>
         </div>
       </section>

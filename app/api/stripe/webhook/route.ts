@@ -41,22 +41,126 @@ export async function POST(request: NextRequest) {
 
   // Handle the event
   console.log('[Webhook] Event type:', event.type)
+  
+  // Handle subscription created
+  if (event.type === 'customer.subscription.created') {
+    const subscription = event.data.object as Stripe.Subscription
+    const userId = subscription.metadata?.userId
+
+    console.log('[Webhook] ✅ Processing customer.subscription.created:', subscription.id)
+
+    if (userId) {
+      // Update the session purchase with subscription details
+      const { error: updateError } = await supabase
+        .from('session_purchases')
+        .update({
+          status: 'paid',
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: subscription.customer as string,
+          subscription_status: 'active',
+        })
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+
+      if (updateError) {
+        console.error('Error updating purchase with subscription:', updateError)
+      }
+
+      // Track subscription_started event for Customer.io
+      try {
+        await trackEvent(userId, 'subscription_started', {
+          subscription_id: subscription.id,
+          plan: 'monthly',
+          amount: 1500, // $15.00
+          currency: 'usd',
+        })
+        console.log('subscription_started event tracked')
+      } catch (err) {
+        console.error('Error tracking subscription_started:', err)
+      }
+
+      // Log audit event
+      try {
+        await logAuditEvent(userId, 'subscription_started', {
+          subscription_id: subscription.id,
+        })
+      } catch (err) {
+        console.error('Error logging subscription_started audit:', err)
+      }
+    }
+  }
+
+  // Handle subscription deleted (cancelled)
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object as Stripe.Subscription
+    const userId = subscription.metadata?.userId
+
+    console.log('[Webhook] ✅ Processing customer.subscription.deleted:', subscription.id)
+
+    // Find the purchase by subscription ID
+    const { data: purchase } = await supabase
+      .from('session_purchases')
+      .select('user_id')
+      .eq('stripe_subscription_id', subscription.id)
+      .single()
+
+    const targetUserId = userId || purchase?.user_id
+
+    if (targetUserId) {
+      // Update subscription status to cancelled
+      const { error: updateError } = await supabase
+        .from('session_purchases')
+        .update({
+          subscription_status: 'cancelled',
+        })
+        .eq('stripe_subscription_id', subscription.id)
+
+      if (updateError) {
+        console.error('Error updating subscription status:', updateError)
+      }
+
+      // Track subscription_cancelled event for Customer.io campaigns
+      try {
+        await trackEvent(targetUserId, 'subscription_cancelled', {
+          subscription_id: subscription.id,
+          cancelled_at: new Date().toISOString(),
+        })
+        console.log('subscription_cancelled event tracked')
+      } catch (err) {
+        console.error('Error tracking subscription_cancelled:', err)
+      }
+
+      // Log audit event
+      try {
+        await logAuditEvent(targetUserId, 'subscription_cancelled', {
+          subscription_id: subscription.id,
+        })
+      } catch (err) {
+        console.error('Error logging subscription_cancelled audit:', err)
+      }
+    }
+  }
+
+  // Handle checkout session completed (for subscription or one-time)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
 
     console.log('[Webhook] ✅ Processing checkout.session.completed for session:', session.id)
 
-    // Update session purchase status to paid
+    // For subscription mode, the subscription webhook handles the main logic
+    // This handles any additional tracking and the pending status update
     const { data: purchase, error: updateError } = await supabase
       .from('session_purchases')
-      .update({ status: 'paid' })
+      .update({ 
+        status: 'paid',
+        stripe_customer_id: session.customer as string,
+      })
       .eq('stripe_session_id', session.id)
       .select()
       .single()
 
     if (updateError) {
       console.error('Error updating purchase:', updateError)
-      // Don't return error - we still want to process the event
     } else {
       console.log('Purchase updated successfully:', purchase)
     }
@@ -72,7 +176,7 @@ export async function POST(request: NextRequest) {
       console.log('Processing events for userId:', userId)
 
       // Retrieve line items to get product name
-      let productName = 'Consulting Session' // Default fallback
+      let productName = 'Coaching Access' // Default for subscription
       let price = session.amount_total || 0
       
       try {
@@ -91,7 +195,6 @@ export async function POST(request: NextRequest) {
         }
       } catch (err) {
         console.error('Error retrieving product details:', err)
-        // Use default product name if retrieval fails
       }
 
       // Track events
@@ -100,20 +203,11 @@ export async function POST(request: NextRequest) {
           session_id: session.id,
           amount: session.amount_total,
           currency: session.currency,
+          mode: session.mode, // 'subscription' or 'payment'
         })
         console.log('payment_completed event tracked')
       } catch (err) {
         console.error('Error tracking payment_completed:', err)
-      }
-
-      try {
-        await trackEvent(userId, 'session_purchased', {
-          session_id: session.id,
-          amount: session.amount_total,
-        })
-        console.log('session_purchased event tracked')
-      } catch (err) {
-        console.error('Error tracking session_purchased:', err)
       }
 
       try {
@@ -134,9 +228,6 @@ export async function POST(request: NextRequest) {
         await logAuditEvent(userId, 'payment_completed', {
           session_id: session.id,
           amount: session.amount_total,
-        })
-        await logAuditEvent(userId, 'session_purchased', {
-          session_id: session.id,
         })
         await logAuditEvent(userId, 'order_completed', {
           session_id: session.id,

@@ -8,28 +8,34 @@ export async function POST() {
     const user = await requireAuth()
     const supabase = await createClient()
 
-    // Create Stripe Checkout session
+    const priceId = process.env.STRIPE_SUBSCRIPTION_PRICE_ID
+    if (!priceId) {
+      throw new Error('STRIPE_SUBSCRIPTION_PRICE_ID is not configured')
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+
+    // Create Stripe Checkout session for subscription
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'Consulting Session',
-              description: '30-minute coaching session',
-            },
-            unit_amount: 9900, // $99.00
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
-      mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/api/stripe/callback?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/dashboard/purchase`,
+      mode: 'subscription',
+      success_url: `${appUrl}/api/stripe/callback?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/dashboard/purchase`,
       customer_email: user.email,
       metadata: {
         userId: user.id,
+      },
+      subscription_data: {
+        metadata: {
+          userId: user.id,
+        },
       },
     })
 

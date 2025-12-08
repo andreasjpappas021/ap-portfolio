@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock, Calendar, XCircle } from 'lucide-react'
 import { trackEvent } from '@/lib/customerio-server'
 import { logAuditEvent } from '@/lib/audit'
 import SessionPrepForm from '@/components/SessionPrepForm'
@@ -213,24 +213,67 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Subscription Status */}
               {hasPaidSession ? (
                 <div className="flex items-center gap-3 text-green-400">
                   <CheckCircle2 className="w-6 h-6" />
-                  <span className="font-semibold">Session Unlocked</span>
+                  <div>
+                    <span className="font-semibold">Active Subscription</span>
+                    <p className="text-xs text-slate-400">Unlimited session scheduling</p>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 text-slate-400">
                   <Clock className="w-6 h-6" />
-                  <span>No active session</span>
+                  <span>No active subscription</span>
                 </div>
               )}
 
+              {/* Upcoming Appointments */}
+              {(() => {
+                const scheduledSessions = purchases?.filter((p) => p.scheduled_at !== null) || []
+                if (scheduledSessions.length === 0) {
+                  return hasPaidSession ? (
+                    <div className="pt-4 border-t border-slate-700">
+                      <p className="text-slate-400 text-sm font-semibold mb-2">
+                        Upcoming Appointments
+                      </p>
+                      <div className="flex items-center gap-2 text-slate-500 text-sm">
+                        <Calendar className="w-4 h-4" />
+                        <span>No appointments scheduled yet</span>
+                      </div>
+                    </div>
+                  ) : null
+                }
+                return (
+                  <div className="pt-4 border-t border-slate-700">
+                    <p className="text-slate-400 text-sm font-semibold mb-2">
+                      Upcoming Appointments
+                    </p>
+                    <div className="space-y-2">
+                      {scheduledSessions.map((session) => (
+                        <div
+                          key={session.id}
+                          className="flex items-center gap-3 p-2 bg-slate-700/50 rounded"
+                        >
+                          <Calendar className="w-4 h-4 text-blue-400" />
+                          <span className="text-slate-300 text-sm">
+                            Scheduled: {new Date(session.scheduled_at).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Purchase/Subscription History */}
               {purchases && purchases.length > 0 && (
-                <div className="space-y-2 pt-4">
+                <div className="space-y-2 pt-4 border-t border-slate-700">
                   <p className="text-slate-400 text-sm font-semibold">
-                    Purchase History:
+                    Subscription History
                   </p>
-                  {purchases.map((purchase) => (
+                  {purchases.slice(0, 3).map((purchase) => (
                     <div
                       key={purchase.id}
                       className="flex items-center justify-between p-2 bg-slate-700/50 rounded"
@@ -247,7 +290,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                             : 'text-red-400'
                         }`}
                       >
-                        {purchase.status}
+                        {purchase.subscription_status === 'cancelled' 
+                          ? 'cancelled' 
+                          : purchase.status}
                       </span>
                     </div>
                   ))}
@@ -261,7 +306,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </Button>
                 ) : (
                   <Button asChild className="w-full">
-                    <Link href="/dashboard/purchase">Purchase Session</Link>
+                    <Link href="/dashboard/purchase">Subscribe Now</Link>
                   </Button>
                 )}
               </div>

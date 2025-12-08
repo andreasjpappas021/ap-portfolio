@@ -78,25 +78,25 @@ export default function PurchasePage() {
       <Card className="w-full max-w-md bg-slate-800/50 border-slate-700">
         <CardHeader>
           <CardTitle className="text-white text-2xl">
-            Consulting Session
+            Coaching Access
           </CardTitle>
           <CardDescription className="text-slate-400">
-            Book a 30-minute coaching session
+            Unlock unlimited session scheduling
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="text-center">
-            <div className="text-5xl font-bold text-white mb-2">$99</div>
-            <p className="text-slate-400">One-time payment</p>
+            <div className="text-5xl font-bold text-white mb-2">$15</div>
+            <p className="text-slate-400">per month</p>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <Check className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-white font-semibold">30-minute session</p>
+                <p className="text-white font-semibold">Unlimited session scheduling</p>
                 <p className="text-slate-400 text-sm">
-                  Personalized coaching tailored to your needs
+                  Book as many coaching sessions as you need
                 </p>
               </div>
             </div>
@@ -105,16 +105,16 @@ export default function PurchasePage() {
               <div>
                 <p className="text-white font-semibold">Flexible scheduling</p>
                 <p className="text-slate-400 text-sm">
-                  Choose a time that works for you
+                  Choose times that work for you
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Check className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-white font-semibold">Expert guidance</p>
+                <p className="text-white font-semibold">Cancel anytime</p>
                 <p className="text-slate-400 text-sm">
-                  Get insights from an experienced product leader
+                  No long-term commitment required
                 </p>
               </div>
             </div>
@@ -126,11 +126,11 @@ export default function PurchasePage() {
             className="w-full"
             size="lg"
           >
-            {loading ? 'Processing...' : 'Continue to Payment'}
+            {loading ? 'Processing...' : 'Subscribe Now'}
           </Button>
 
           <p className="text-xs text-center text-slate-500">
-            Secure payment powered by Stripe
+            Secure payment powered by Stripe. Cancel anytime.
           </p>
         </CardContent>
       </Card>

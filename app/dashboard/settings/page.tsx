@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { trackEvent } from '@/lib/customerio-server'
+import { CreditCard, ExternalLink } from 'lucide-react'
 
 export default function SettingsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [hasSubscription, setHasSubscription] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     job: '',
@@ -45,6 +47,19 @@ export default function SettingsPage() {
             job: profile.job || '',
             company: profile.company || '',
           })
+        }
+
+        // Check if user has an active subscription
+        const { data: purchases } = await supabase
+          .from('session_purchases')
+          .select('stripe_customer_id, subscription_status')
+          .eq('user_id', user.id)
+          .not('stripe_customer_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        if (purchases && purchases.length > 0 && purchases[0].stripe_customer_id) {
+          setHasSubscription(true)
         }
       } catch (error) {
         console.error('Error loading profile:', error)
@@ -100,6 +115,31 @@ export default function SettingsPage() {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    try {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const { url, error } = await response.json()
+
+      if (error) {
+        throw new Error(error)
+      }
+
+      if (url) {
+        window.location.href = url
+      }
+    } catch (error: any) {
+      console.error('Error opening portal:', error)
+      alert(error.message || 'Failed to open subscription management')
+    } finally {
+      setPortalLoading(false)
+    }
   }
 
   const handleChurn = async () => {
@@ -224,6 +264,40 @@ export default function SettingsPage() {
             </form>
           </CardContent>
         </Card>
+
+        {hasSubscription && (
+          <Card className="bg-slate-800/50 border-slate-700 mb-6">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Subscription
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Manage your monthly subscription
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-slate-300 text-sm">
+                You have an active subscription. Use the button below to manage your payment method, 
+                view invoices, or cancel your subscription.
+              </p>
+              <Button
+                onClick={handleManageSubscription}
+                disabled={portalLoading}
+                className="w-full"
+              >
+                {portalLoading ? (
+                  'Opening...'
+                ) : (
+                  <>
+                    Manage Subscription
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader>
