@@ -134,6 +134,7 @@ export async function sendTransactionalEmail(
     userId,
     transactionalId,
     hasData: !!data,
+    appApiKeySet: !!appApiKey,
   })
 
   try {
@@ -145,53 +146,113 @@ export async function sendTransactionalEmail(
       .eq('id', userId)
       .single()
 
-    if (userError || !user?.email) {
+    if (userError) {
       console.error(
-        '[Customer.io] Error fetching user email:',
-        userError || 'User not found',
-        'User ID:',
-        userId
+        '[Customer.io] ❌ Error fetching user email from database:',
+        {
+          error: userError,
+          errorCode: userError.code,
+          errorMessage: userError.message,
+          userId,
+        }
       )
       return
     }
 
-    console.log('[Customer.io] Found user email:', user.email)
+    if (!user?.email) {
+      console.error(
+        '[Customer.io] ❌ User not found or has no email:',
+        {
+          userId,
+          userFound: !!user,
+          hasEmail: !!user?.email,
+        }
+      )
+      return
+    }
+
+    console.log('[Customer.io] ✅ Found user email:', {
+      userId,
+      email: user.email,
+      transactionalId,
+    })
+
+    // Prepare request payload
+    const requestPayload = {
+      transactional_message_id: transactionalId,
+      identifiers: {
+        id: userId,
+      },
+      to: user.email,
+      message_data: data || {},
+    }
+
+    console.log('[Customer.io] Sending email request to Customer.io App API...', {
+      endpoint: 'https://api.customer.io/v1/send/email',
+      transactionalId,
+      recipientEmail: user.email,
+      hasMessageData: !!data,
+    })
 
     // Send transactional email via Customer.io App API
-    console.log('[Customer.io] Sending email request to Customer.io App API...')
     const response = await fetch('https://api.customer.io/v1/send/email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${appApiKey}`,
       },
-      body: JSON.stringify({
-        transactional_message_id: transactionalId,
-        identifiers: {
-          id: userId,
-        },
-        to: user.email,
-        message_data: data || {},
-      }),
+      body: JSON.stringify(requestPayload),
     })
 
+    const responseText = await response.text()
+    let responseData: any = null
+
+    try {
+      responseData = responseText ? JSON.parse(responseText) : null
+    } catch (parseError) {
+      // Response is not JSON, that's okay
+    }
+
     if (!response.ok) {
-      const errorText = await response.text()
+      console.error('[Customer.io] ❌ App API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseText,
+        responseData,
+        transactionalId,
+        userId,
+        recipientEmail: user.email,
+      })
       throw new Error(
-        `Customer.io App API error: ${response.status} ${errorText}`
+        `Customer.io App API error: ${response.status} ${response.statusText} - ${responseText}`
       )
     }
 
-    const result = await response.json()
-    console.log('[Customer.io] ✅ Transactional email sent successfully:', result)
+    console.log('[Customer.io] ✅ Transactional email sent successfully:', {
+      response: responseData,
+      transactionalId,
+      userId,
+      recipientEmail: user.email,
+      messageId: responseData?.message_id || responseData?.id || 'unknown',
+    })
   } catch (error: any) {
-    console.error('[Customer.io] ❌ Error sending transactional email:', error)
+    console.error('[Customer.io] ❌ Error sending transactional email:', {
+      error: error.message,
+      errorStack: error.stack,
+      statusCode: error.statusCode,
+      response: error.response,
+      userId,
+      transactionalId,
+    })
+    
+    // Log additional details if available
     if (error.statusCode) {
-      console.error(`[Customer.io] Status: ${error.statusCode}, Message: ${error.message}`)
+      console.error(`[Customer.io] HTTP Status: ${error.statusCode}`)
     }
     if (error.response) {
-      console.error('[Customer.io] Response:', error.response)
+      console.error('[Customer.io] Error Response:', error.response)
     }
+    
     // Don't throw - we don't want to break the app if Customer.io is down
   }
 }
