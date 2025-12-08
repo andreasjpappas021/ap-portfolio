@@ -26,36 +26,18 @@ export default function SubscriptionHistory({
   }
 
   // Check if user has an active subscription that can be cancelled
-  // Treat null subscription_status as active if there's a subscription_id or customer_id
-  // (customer_id indicates a subscription checkout, even if subscription_id isn't set yet)
+  // Show cancel link if they have any paid subscription that's not cancelled
+  // The cancel endpoint will handle finding the subscription even if subscription_id is missing
   const hasCancellableSubscription = purchases?.some(
     (p) => {
-      const hasSubscriptionId = p.stripe_subscription_id !== null && p.stripe_subscription_id !== undefined
-      const hasCustomerId = p.stripe_customer_id !== null && p.stripe_customer_id !== undefined
       const isNotCancelled = p.subscription_status !== 'cancelled'
       const isPaid = p.status === 'paid'
       
-      // Can cancel if: paid, not cancelled, and has either subscription_id, customer_id, or hasActiveSubscription flag
-      return isPaid && isNotCancelled && (hasSubscriptionId || hasCustomerId || hasActiveSubscription)
+      // Can cancel if: paid and not cancelled
+      // We'll show the link for any paid subscription, and the cancel endpoint will handle the rest
+      return isPaid && isNotCancelled
     }
   ) || false
-
-  // Debug logging
-  if (typeof window !== 'undefined') {
-    console.log('[SubscriptionHistory] Debug:', {
-      purchasesCount: purchases?.length,
-      hasActiveSubscription,
-      hasCancellableSubscription,
-      purchases: purchases?.map(p => ({
-        status: p.status,
-        subscription_status: p.subscription_status,
-        has_subscription_id: !!p.stripe_subscription_id,
-        has_customer_id: !!p.stripe_customer_id,
-        stripe_subscription_id: p.stripe_subscription_id,
-        stripe_customer_id: p.stripe_customer_id,
-      })),
-    })
-  }
 
   return (
     <>
