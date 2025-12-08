@@ -330,7 +330,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
               {/* Upcoming Appointments */}
               {(() => {
-                const scheduledSessions = purchases?.filter((p) => p.scheduled_at !== null) || []
+                // Filter for sessions with valid scheduled_at dates
+                const scheduledSessions = purchases?.filter((p) => {
+                  if (!p.scheduled_at) return false
+                  const date = new Date(p.scheduled_at)
+                  return !isNaN(date.getTime()) // Valid date check
+                }) || []
+                
                 if (scheduledSessions.length === 0) {
                   return hasPaidSession ? (
                     <div className="pt-4 border-t border-slate-700">
@@ -350,17 +356,28 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       Upcoming Appointments
                     </p>
                     <div className="space-y-2">
-                      {scheduledSessions.map((session) => (
-                        <div
-                          key={session.id}
-                          className="flex items-center gap-3 p-2 bg-slate-700/50 rounded"
-                        >
-                          <Calendar className="w-4 h-4 text-blue-400" />
-                          <span className="text-slate-300 text-sm">
-                            Scheduled: {new Date(session.scheduled_at).toLocaleString()}
-                          </span>
-                        </div>
-                      ))}
+                      {scheduledSessions.map((session) => {
+                        const scheduledDate = new Date(session.scheduled_at)
+                        const formattedDate = scheduledDate.toLocaleString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })
+                        return (
+                          <div
+                            key={session.id}
+                            className="flex items-center gap-3 p-2 bg-slate-700/50 rounded"
+                          >
+                            <Calendar className="w-4 h-4 text-blue-400" />
+                            <span className="text-slate-300 text-sm">
+                              Scheduled: {formattedDate}
+                            </span>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )
