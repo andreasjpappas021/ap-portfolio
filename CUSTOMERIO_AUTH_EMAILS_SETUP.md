@@ -1,0 +1,240 @@
+# Customer.io Auth Email Setup Guide
+
+## Overview
+
+You need to create **TWO separate transactional messages** in Customer.io - one for login and one for signup. Both use the same magic link variable, but the signup email has additional user information available.
+
+## Step 1: Create Login Transactional Message
+
+1. Go to Customer.io dashboard → **Messages** → **Transactional Messages**
+2. Click **"Create Transactional Message"**
+3. Set the **Transactional Message ID** to: `magic_link_login` (must match exactly - this is case-sensitive!)
+4. Click **"Create"** or **"Next"**
+
+### How to Add a Button with the Magic Link in Customer.io Design Studio
+
+Once you're in the email design studio:
+
+**Option 1: Using the Button Block (Recommended)**
+1. In the left sidebar, find the **"Button"** block/component
+2. Drag and drop it into your email template where you want the button
+3. Click on the button you just added
+4. In the button settings panel (usually on the right), you'll see:
+   - **Button Text**: Enter "Sign In" (or whatever you want)
+   - **Link URL**: This is where you add the magic link variable
+5. In the **Link URL** field, type: `{{message_data.magic_link_url}}`
+   - Make sure to include the double curly braces `{{}}`
+   - Customer.io will recognize this as a Liquid variable
+6. Customize the button style (colors, padding, etc.) using the design options
+
+**Option 2: Using a Text Link**
+1. Add a **Text** block to your email
+2. Type your button text (e.g., "Sign In")
+3. Select the text
+4. Click the **link icon** in the toolbar
+5. In the URL field, enter: `{{message_data.magic_link_url}}`
+6. Style it to look like a button if desired
+
+**Option 3: Using HTML/Code Block (Advanced)**
+1. Add an **HTML** or **Code** block
+2. Paste this HTML:
+```html
+<a href="{{message_data.magic_link_url}}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+  Sign In
+</a>
+```
+
+### Login Email Template Variables
+
+In your template, you can use these variables (Liquid syntax):
+
+- `{{message_data.magic_link_url}}` - **The magic link URL** (required - use this for the clickable link/button)
+- `{{message_data.email}}` - User's email address
+- `{{message_data.redirect_url}}` - Where to redirect after login (usually `/dashboard`)
+
+### Example Login Email Structure
+
+**Subject:** Sign in to your account
+
+**Email Content:**
+- Heading: "Sign in to your account"
+- Text: "Hi there, click the button below to sign in:"
+- **Button**: Link URL = `{{message_data.magic_link_url}}`, Button Text = "Sign In"
+- Text: "Or copy and paste this link: {{message_data.magic_link_url}}"
+- Text: "This link will expire in 1 hour."
+
+---
+
+## Step 2: Create Signup Transactional Message
+
+1. Go to Customer.io dashboard → **Messages** → **Transactional Messages**
+2. Click **"Create Transactional Message"**
+3. Set the **Transactional Message ID** to: `magic_link_signup` (must match exactly - this is case-sensitive!)
+4. Click **"Create"** or **"Next"**
+
+### How to Add a Button with the Magic Link
+
+Follow the same steps as the login email:
+
+1. Drag a **Button** block into your template
+2. Set **Button Text** to: "Confirm Email" (or "Get Started", etc.)
+3. Set **Link URL** to: `{{message_data.magic_link_url}}`
+4. Customize the button style
+
+### Signup Email Template Variables
+
+In your template, you can use these variables (Liquid syntax):
+
+- `{{message_data.magic_link_url}}` - **The magic link URL** (required - use this for the clickable link/button)
+- `{{message_data.email}}` - User's email address
+- `{{message_data.redirect_url}}` - Where to redirect after signup (usually `/dashboard`)
+- `{{message_data.name}}` - User's name (from registration form)
+- `{{message_data.job}}` - User's job title (from registration form)
+- `{{message_data.company}}` - User's company (from registration form)
+
+### Example Signup Email Structure
+
+**Subject:** Welcome! Confirm your email to get started
+
+**Email Content:**
+- Heading: "Welcome, {{message_data.name}}!"
+- Text: "Thanks for signing up. We're excited to have you on board!"
+- Text: "Click the button below to confirm your email:"
+- **Button**: Link URL = `{{message_data.magic_link_url}}`, Button Text = "Confirm Email"
+- Text: "Or copy and paste this link: {{message_data.magic_link_url}}"
+- Text: "This link will expire in 1 hour."
+
+---
+
+## Important Notes
+
+### Magic Link Variable - Important!
+
+- **Both emails use the same variable name**: `{{message_data.magic_link_url}}`
+- **How to use it**: In Customer.io's design studio, when setting a button or link URL, simply type: `{{message_data.magic_link_url}}`
+- **No quotes needed** - just the variable name with the curly braces
+- This is the full, clickable URL that will authenticate the user
+- The URL format will be: `https://your-domain.com/auth/callback?code=...&redirect=...`
+- The link is automatically generated by Supabase and includes all necessary authentication tokens
+- **Customer.io will automatically replace this variable** with the actual link when the email is sent
+
+### Transactional Message IDs
+
+- **Login**: Must be exactly `magic_link_login` (case-sensitive)
+- **Signup**: Must be exactly `magic_link_signup` (case-sensitive)
+- These IDs are hardcoded in the API routes, so they must match exactly
+
+### Testing Your Email Templates
+
+**Important:** When you click "Send Test" in Customer.io, you MUST provide test data, otherwise the button won't have a link!
+
+#### Option 1: Test in Customer.io Design Studio (Quick Preview)
+
+1. In Customer.io's design studio, click **"Send Test"** or **"Preview"**
+2. When prompted for test data, you need to add the `message_data` object
+3. Click **"Add Test Data"** or look for a section to add variables
+4. Add this JSON structure:
+   ```json
+   {
+     "message_data": {
+       "magic_link_url": "https://your-domain.com/auth/callback?code=test123&redirect=/dashboard",
+       "email": "test@example.com",
+       "redirect_url": "/dashboard"
+     }
+   }
+   ```
+5. For signup emails, also include:
+   ```json
+   {
+     "message_data": {
+       "magic_link_url": "https://your-domain.com/auth/callback?code=test123&redirect=/dashboard",
+       "email": "test@example.com",
+       "redirect_url": "/dashboard",
+       "name": "John Doe",
+       "job": "Product Manager",
+       "company": "Acme Inc"
+     }
+   }
+   ```
+6. Now send the test - the button should be clickable!
+
+**Note:** The test link won't actually work (it's just for preview), but you can verify the button appears correctly.
+
+#### Option 2: Test with Real Flow (Recommended)
+
+The best way to test is to actually trigger the real flow:
+
+1. **For Login:**
+   - Go to your app: `http://localhost:3000/auth/login`
+   - Enter an email address
+   - Click "Send Magic Link"
+   - Check your email - the button should have a working link
+
+2. **For Signup:**
+   - Go to your app: `http://localhost:3000/auth/register`
+   - Fill out the form and submit
+   - Check your email - the button should have a working link
+
+3. **Or use the test endpoint:**
+
+   I've created a test endpoint you can use to send a real test email with a working magic link:
+
+   **For Login:**
+   ```bash
+   curl -X POST http://localhost:3000/api/auth/test-magic-link \
+     -H "Content-Type: application/json" \
+     -d '{"email": "your-email@example.com", "type": "login"}'
+   ```
+
+   **For Signup:**
+   ```bash
+   curl -X POST http://localhost:3000/api/auth/test-magic-link \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "your-email@example.com",
+       "type": "signup",
+       "name": "John Doe",
+       "job": "Product Manager",
+       "company": "Acme Inc"
+     }'
+   ```
+
+   Or use a tool like Postman, Thunder Client (VS Code), or your browser's fetch console to send the POST request. The email will be sent with a **real, working magic link** that you can click to test the full flow.
+
+### Disable Supabase Emails
+
+**Important:** You should disable Supabase's automatic email sending to avoid duplicate emails and confusion:
+
+1. Go to your Supabase dashboard
+2. Navigate to **Authentication** → **Settings**
+3. Look for **Email Templates** or **Email Settings** section
+4. **Disable or remove** Supabase's email templates (or set them to not send automatically)
+5. **Keep "Email" provider enabled** - users still authenticate with email, but emails are sent via Customer.io
+6. **Keep "Confirm email" enabled** if you want email confirmation - our code handles this via Customer.io
+
+**Why?** Our code uses `supabase.auth.admin.generateLink()` which generates the magic link, but we send it via Customer.io. Supabase won't automatically send emails when using the admin API, but disabling Supabase's email templates ensures there's no confusion or duplicate emails if someone accidentally uses the regular auth methods.
+
+**Note:** Even if you don't disable it, our code bypasses Supabase's email system, but it's cleaner to disable it for clarity.
+
+---
+
+## Summary Checklist
+
+- [ ] Created transactional message with ID: `magic_link_login` (exact match, case-sensitive)
+- [ ] Added a Button block to login email
+- [ ] Set button Link URL to: `{{message_data.magic_link_url}}`
+- [ ] Created transactional message with ID: `magic_link_signup` (exact match, case-sensitive)
+- [ ] Added a Button block to signup email
+- [ ] Set button Link URL to: `{{message_data.magic_link_url}}`
+- [ ] (Optional) Added user name to signup email heading: `{{message_data.name}}`
+- [ ] Tested login flow - received email with working magic link button
+- [ ] Tested signup flow - received email with working magic link button
+
+## Quick Reference: The Magic Link Variable
+
+**For both login and signup emails:**
+- Variable name: `{{message_data.magic_link_url}}`
+- Where to use it: In the Button's "Link URL" field (or any link URL field)
+- How to enter it: Just type it exactly as shown: `{{message_data.magic_link_url}}`
+- Customer.io will automatically replace it with the actual link when sending the email
+

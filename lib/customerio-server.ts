@@ -257,4 +257,107 @@ export async function sendTransactionalEmail(
   }
 }
 
+/**
+ * Send an authentication email via Customer.io App API
+ * Used for magic links (login and signup) where we may not have a userId yet
+ */
+export async function sendAuthEmail(
+  email: string,
+  transactionalId: string,
+  messageData: Record<string, unknown>
+): Promise<void> {
+  const appApiKey = process.env.CIO_APP_API_KEY
+
+  if (!appApiKey) {
+    const error = new Error('Missing CIO_APP_API_KEY environment variable')
+    console.error('[Customer.io] ❌ Missing CIO_APP_API_KEY. Auth email not sent.')
+    throw error
+  }
+
+  console.log('[Customer.io] Sending auth email:', {
+    email,
+    transactionalId,
+    hasMessageData: !!messageData,
+  })
+
+  try {
+    // Prepare request payload
+    // For auth emails, we use email as the identifier since user may not exist yet
+    const requestPayload: any = {
+      transactional_message_id: transactionalId,
+      identifiers: {
+        email: email,
+      },
+      to: email,
+      message_data: messageData,
+    }
+    
+    // Add "from" field (Customer.io requires this if not set in template)
+    // You can set this in your Customer.io transactional message settings, or via env var
+    const fromEmail = process.env.CIO_FROM_EMAIL || process.env.FROM_EMAIL || 'noreply@andreasjpappas.com'
+    requestPayload.from = fromEmail
+
+    console.log('[Customer.io] Sending auth email request to Customer.io App API...', {
+      endpoint: 'https://api.customer.io/v1/send/email',
+      transactionalId,
+      recipientEmail: email,
+      hasMessageData: !!messageData,
+      messageDataKeys: Object.keys(messageData),
+      magicLinkUrl: messageData.magic_link_url,
+    })
+    
+    console.log('[Customer.io] Full request payload:', JSON.stringify(requestPayload, null, 2))
+
+    // Send transactional email via Customer.io App API
+    const response = await fetch('https://api.customer.io/v1/send/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${appApiKey}`,
+      },
+      body: JSON.stringify(requestPayload),
+    })
+
+    const responseText = await response.text()
+    let responseData: any = null
+
+    try {
+      responseData = responseText ? JSON.parse(responseText) : null
+    } catch (parseError) {
+      // Response is not JSON, that's okay
+    }
+
+    if (!response.ok) {
+      console.error('[Customer.io] ❌ App API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        responseText,
+        responseData,
+        transactionalId,
+        recipientEmail: email,
+      })
+      throw new Error(
+        `Customer.io App API error: ${response.status} ${response.statusText} - ${responseText}`
+      )
+    }
+
+    console.log('[Customer.io] ✅ Auth email sent successfully:', {
+      response: responseData,
+      transactionalId,
+      recipientEmail: email,
+      messageId: responseData?.message_id || responseData?.id || 'unknown',
+    })
+  } catch (error: any) {
+    console.error('[Customer.io] ❌ Error sending auth email:', {
+      error: error.message,
+      errorStack: error.stack,
+      transactionalId,
+      recipientEmail: email,
+    })
+    
+    // Re-throw error so caller can handle it appropriately
+    throw error
+  }
+}
+
 

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,26 +25,26 @@ export default function RegisterPage() {
     setMessage(null)
 
     try {
-      const supabase = createClient()
-
-      // Sign up with Supabase Auth (Magic Link)
-      const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
-        email: formData.email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: {
-            name: formData.name,
-            job: formData.job,
-            company: formData.company,
-          },
+      const response = await fetch('/api/auth/send-signup-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: formData.email,
+          name: formData.name,
+          job: formData.job,
+          company: formData.company,
+          redirect: '/dashboard',
+        }),
       })
 
-      if (authError) throw authError
+      const data = await response.json()
 
-      // For magic link, we need to create the user profile after they click the link
-      // Store the profile data temporarily or create it in the callback
-      // For now, we'll create it here and update it in the callback if needed
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong. Please try again.')
+      }
+
       setMessage({
         type: 'success',
         text: 'Check your email for the magic link to complete registration!',

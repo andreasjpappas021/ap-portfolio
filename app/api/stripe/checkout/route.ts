@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
 import { getAppUrl } from '@/lib/app-url'
@@ -6,7 +6,15 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth()
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated. Please log in.' },
+        { status: 401 }
+      )
+    }
+    
     const supabase = await createClient()
 
     // Check if user already has an active subscription
