@@ -192,7 +192,10 @@ export async function sendTransactionalEmail(
       transactionalId,
       recipientEmail: user.email,
       hasMessageData: !!data,
+      messageData: data, // Log the actual data being sent
     })
+    
+    console.log('[Customer.io] Full request payload:', JSON.stringify(requestPayload, null, 2))
 
     // Send transactional email via Customer.io App API
     const response = await fetch('https://api.customer.io/v1/send/email', {

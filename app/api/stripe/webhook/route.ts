@@ -66,9 +66,18 @@ export async function POST(request: NextRequest) {
         console.error('Error updating purchase with subscription:', updateError)
       }
 
+      // Fetch user profile to get name
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .single()
+      const userName = userProfile?.name || ''
+
       // Track subscription_started event for Customer.io
       try {
         await trackEvent(userId, 'subscription_started', {
+          name: userName,
           subscription_id: subscription.id,
           plan: 'monthly',
           amount: 1500, // $15.00
@@ -82,6 +91,7 @@ export async function POST(request: NextRequest) {
       // Log audit event
       try {
         await logAuditEvent(userId, 'subscription_started', {
+          name: userName,
           subscription_id: subscription.id,
         })
       } catch (err) {
@@ -119,9 +129,18 @@ export async function POST(request: NextRequest) {
         console.error('Error updating subscription status:', updateError)
       }
 
+      // Fetch user profile to get name
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', targetUserId)
+        .single()
+      const userName = userProfile?.name || ''
+
       // Track subscription_cancelled event for Customer.io campaigns
       try {
         await trackEvent(targetUserId, 'subscription_cancelled', {
+          name: userName,
           subscription_id: subscription.id,
           cancelled_at: new Date().toISOString(),
         })
@@ -133,6 +152,7 @@ export async function POST(request: NextRequest) {
       // Track user_churned event for Customer.io flows
       try {
         await trackEvent(targetUserId, 'user_churned', {
+          name: userName,
           subscription_id: subscription.id,
           cancelled_at: new Date().toISOString(),
           cancelled_via: 'stripe_webhook',
@@ -145,9 +165,11 @@ export async function POST(request: NextRequest) {
       // Log audit event
       try {
         await logAuditEvent(targetUserId, 'subscription_cancelled', {
+          name: userName,
           subscription_id: subscription.id,
         })
         await logAuditEvent(targetUserId, 'user_churned', {
+          name: userName,
           subscription_id: subscription.id,
           cancelled_at: new Date().toISOString(),
         })
@@ -208,6 +230,14 @@ export async function POST(request: NextRequest) {
     } else {
       console.log('Processing events for userId:', userId)
 
+      // Fetch user profile to get name
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', userId)
+        .single()
+      const userName = userProfile?.name || ''
+
       // Retrieve line items to get product name
       let productName = 'Coaching Access' // Default for subscription
       let price = session.amount_total || 0
@@ -233,6 +263,7 @@ export async function POST(request: NextRequest) {
       // Track events
       try {
         await trackEvent(userId, 'payment_completed', {
+          name: userName,
           session_id: session.id,
           amount: session.amount_total,
           currency: session.currency,
@@ -245,6 +276,7 @@ export async function POST(request: NextRequest) {
 
       try {
         await trackEvent(userId, 'order_completed', {
+          name: userName,
           session_id: session.id,
           product_name: productName,
           price: price,
@@ -259,10 +291,12 @@ export async function POST(request: NextRequest) {
       // Log to audit table
       try {
         await logAuditEvent(userId, 'payment_completed', {
+          name: userName,
           session_id: session.id,
           amount: session.amount_total,
         })
         await logAuditEvent(userId, 'order_completed', {
+          name: userName,
           session_id: session.id,
           product_name: productName,
           price: price,
@@ -274,18 +308,23 @@ export async function POST(request: NextRequest) {
 
       // Send transactional email
       console.log('[Webhook] Attempting to send transactional email for userId:', userId)
+      
+      // Log the exact data being sent
+      const emailData = {
+        session_id: session.id,
+        product_name: productName,
+        price: price,
+        price_formatted: `$${(price / 100).toFixed(2)}`,
+        amount: (session.amount_total || 0) / 100,
+        currency: session.currency || 'usd',
+      }
+      console.log('[Webhook] 📧 Email data being sent:', JSON.stringify(emailData, null, 2))
+      
       try {
         await sendTransactionalEmail(
           userId,
           'order_completed',
-          {
-            session_id: session.id,
-            product_name: productName,
-            price: price,
-            price_formatted: `$${(price / 100).toFixed(2)}`,
-            amount: (session.amount_total || 0) / 100,
-            currency: session.currency || 'usd',
-          }
+          emailData
         )
         console.log('[Webhook] ✅ Transactional email function completed')
       } catch (err) {

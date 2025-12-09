@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coaching App Infrastructure</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #ffffff;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .title {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    
+    .diagram {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      position: relative;
+    }
+    
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .column-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .user-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+    
+    .user-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .user-icon svg {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .user-label {
+      font-size: 13px;
+      color: #333;
+      font-weight: 500;
+    }
+    
+    .box {
+      border: 2px solid #16a34a;
+      border-radius: 8px;
+      padding: 16px 20px;
+      background: #fff;
+      min-width: 180px;
+      text-align: center;
+    }
+    
+    .box-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    
+    .box-subtitle {
+      font-size: 11px;
+      color: #666;
+    }
+    
+    .box-small {
+      border: 1.5px solid #16a34a;
+      border-radius: 6px;
+      padding: 10px 16px;
+      background: #fff;
+      min-width: 140px;
+      text-align: center;
+      font-size: 12px;
+      color: #333;
+    }
+    
+    .service-group {
+      border: 2px solid #16a34a;
+      border-radius: 10px;
+      padding: 20px;
+      background: #fafafa;
+      position: relative;
+    }
+    
+    .service-group-title {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: #fff;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #16a34a;
+    }
+    
+    .service-group-subtitle {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 15px;
+      padding-top: 5px;
+    }
+    
+    .services-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .api-section {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+    
+    .api-circle {
+      width: 100px;
+      height: 100px;
+      border: 2px solid #16a34a;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+    }
+    
+    .api-circle-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+    }
+    
+    .external-services {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .external-service {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .service-icon {
+      width: 44px;
+      height: 44px;
+      border: 2px solid #16a34a;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      color: #16a34a;
+    }
+    
+    .service-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .service-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .service-desc {
+      font-size: 10px;
+      color: #666;
+    }
+    
+    .database-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .database-icon svg {
+      width: 60px;
+      height: 70px;
+    }
+    
+    .db-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    /* Arrows and connectors */
+    .arrow-section {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0 -10px;
+    }
+    
+    .arrow {
+      display: flex;
+      align-items: center;
+      color: #999;
+    }
+    
+    .arrow-line {
+      width: 40px;
+      height: 2px;
+      background: #ccc;
+    }
+    
+    .arrow-head {
+      width: 0;
+      height: 0;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      border-left: 8px solid #ccc;
+    }
+    
+    .arrow-text {
+      font-size: 9px;
+      color: #888;
+      position: absolute;
+      top: -15px;
+      white-space: nowrap;
+    }
+    
+    /* Tables representation */
+    .tables-section {
+      border: 2px solid #16a34a;
+      border-radius: 10px;
+      padding: 15px;
+      background: #fff;
+    }
+    
+    .tables-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .table-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 11px;
+      color: #555;
+    }
+    
+    .table-icon {
+      width: 16px;
+      height: 12px;
+      border: 1px solid #16a34a;
+      border-radius: 2px;
+      background: #f0fdf4;
+    }
+    
+    /* Responsive connector lines */
+    .connector-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .flow-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+    
+    .flow-item {
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    
+    .flow-arrow {
+      width: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .flow-arrow svg {
+      width: 100%;
+      height: 20px;
+    }
+    
+    /* Enhanced layout */
+    .main-flow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 30px;
+    }
+    
+    .section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 180px;
+    }
+    
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e5e5e5;
+      width: 100%;
+      text-align: center;
+    }
+    
+    .section-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      width: 100%;
+    }
+    
+    .connector {
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+    }
+    
+    .connector svg {
+      width: 50px;
+      height: 30px;
+    }
+    
+    /* Auth provider box */
+    .auth-box {
+      border: 2px solid #333;
+      border-radius: 50%;
+      width: 90px;
+      height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+    }
+    
+    .auth-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+    }
+    
+    .auth-sublabel {
+      font-size: 9px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Coaching Session Booking App — Infrastructure</h1>
+    
+    <div class="main-flow">
+      <!-- Users Section -->
+      <div class="section">
+        <div class="section-title">Users</div>
+        <div class="section-content">
+          <div class="user-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="user-label">Customers</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="connector">
+        <svg viewBox="0 0 50 30">
+          <line x1="0" y1="15" x2="40" y2="15" stroke="#ccc" stroke-width="2"/>
+          <polygon points="40,15 32,10 32,20" fill="#ccc"/>
+        </svg>
+      </div>
+      
+      <!-- Auth Section -->
+      <div class="section">
+        <div class="section-title">Authentication</div>
+        <div class="section-content">
+          <div class="auth-box">
+            <span class="auth-label">Supabase</span>
+            <span class="auth-sublabel">Auth</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="connector">
+        <svg viewBox="0 0 50 30">
+          <line x1="0" y1="15" x2="40" y2="15" stroke="#ccc" stroke-width="2"/>
+          <polygon points="40,15 32,10 32,20" fill="#ccc"/>
+        </svg>
+      </div>
+      
+      <!-- Web App Section -->
+      <div class="section">
+        <div class="section-title">Web Application</div>
+        <div class="section-content">
+          <div class="box">
+            <div class="box-title">Coaching Web App</div>
+            <div class="box-subtitle">(Next.js 15 + React)</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="connector">
+        <svg viewBox="0 0 50 30">
+          <line x1="0" y1="15" x2="40" y2="15" stroke="#ccc" stroke-width="2"/>
+          <polygon points="40,15 32,10 32,20" fill="#ccc"/>
+        </svg>
+      </div>
+      
+      <!-- API Layer Section -->
+      <div class="section" style="min-width: 220px;">
+        <div class="section-title">API Layer</div>
+        <div class="section-content">
+          <div class="service-group">
+            <span class="service-group-title">Next.js API Routes</span>
+            <div class="services-grid" style="margin-top: 10px;">
+              <div class="box-small">Auth API</div>
+              <div class="box-small">Stripe API</div>
+              <div class="box-small">Customer.io API</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="connector">
+        <svg viewBox="0 0 50 30">
+          <line x1="0" y1="15" x2="40" y2="15" stroke="#ccc" stroke-width="2"/>
+          <polygon points="40,15 32,10 32,20" fill="#ccc"/>
+        </svg>
+      </div>
+      
+      <!-- External Services Section -->
+      <div class="section" style="min-width: 280px;">
+        <div class="section-title">External Services</div>
+        <div class="section-content">
+          <div class="external-services">
+            <div class="external-service">
+              <div class="service-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#16a34a" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <div class="service-info">
+                <span class="service-name">Supabase</span>
+                <span class="service-desc">PostgreSQL Database</span>
+              </div>
+            </div>
+            
+            <div class="external-service">
+              <div class="service-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#16a34a" stroke-width="2">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                  <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+              </div>
+              <div class="service-info">
+                <span class="service-name">Stripe</span>
+                <span class="service-desc">Payments & Subscriptions</span>
+              </div>
+            </div>
+            
+            <div class="external-service">
+              <div class="service-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#16a34a" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+              <div class="service-info">
+                <span class="service-name">Customer.io</span>
+                <span class="service-desc">Email & Messaging</span>
+              </div>
+            </div>
+            
+            <div class="external-service">
+              <div class="service-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#16a34a" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div class="service-info">
+                <span class="service-name">Calendly</span>
+                <span class="service-desc">Session Scheduling</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Database Tables Section -->
+    <div style="margin-top: 50px; display: flex; justify-content: center;">
+      <div class="tables-section" style="max-width: 600px; width: 100%;">
+        <div class="tables-header">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 8px;">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          Supabase PostgreSQL — Database Tables
+        </div>
+        <div style="display: flex; gap: 40px; justify-content: center;">
+          <div class="table-item">
+            <div class="table-icon"></div>
+            <span><strong>users</strong> — Profile data</span>
+          </div>
+          <div class="table-item">
+            <div class="table-icon"></div>
+            <span><strong>session_purchases</strong> — Payment records</span>
+          </div>
+          <div class="table-item">
+            <div class="table-icon"></div>
+            <span><strong>audit_events</strong> — Activity logs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Data Flow Legend -->
+    <div style="margin-top: 40px; display: flex; justify-content: center;">
+      <div style="display: flex; gap: 40px; font-size: 11px; color: #666;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 30px; height: 2px; background: #ccc;"></div>
+          <span>Data Flow</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 20px; height: 20px; border: 2px solid #16a34a; border-radius: 4px;"></div>
+          <span>Service / Component</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 20px; height: 20px; border: 2px solid #333; border-radius: 50%;"></div>
+          <span>Auth Provider</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

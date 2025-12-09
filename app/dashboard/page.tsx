@@ -170,6 +170,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
             // Track order_completed event
             await trackEvent(user.id, 'order_completed', {
+              name: user.profile?.name || '',
               session_id: sessionId,
               product_name: productName,
               price: price,
@@ -177,6 +178,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               currency: session.currency || 'usd',
             })
             await logAuditEvent(user.id, 'order_completed', {
+              name: user.profile?.name || '',
               session_id: sessionId,
               product_name: productName,
               price: price,

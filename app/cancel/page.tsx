@@ -28,10 +28,12 @@ export default async function CancelPage({ searchParams }: CancelPageProps) {
   // Track discount applied if returning from portal
   if (appliedDiscount) {
     await trackEvent(user.id, 'discount_applied', {
+      name: user.profile?.name || '',
       timestamp: new Date().toISOString(),
       source: 'portal',
     })
     await logAuditEvent(user.id, 'discount_applied', {
+      name: user.profile?.name || '',
       timestamp: new Date().toISOString(),
     })
   }

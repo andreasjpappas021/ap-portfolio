@@ -54,6 +54,7 @@ export default function RegisterPage() {
       // Note: We'll track the actual registration after email confirmation
       track('registration_initiated', {
         email: formData.email,
+        name: formData.name,
         job: formData.job,
         company: formData.company,
       })

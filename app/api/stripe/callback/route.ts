@@ -83,8 +83,17 @@ export async function GET(request: NextRequest) {
             console.error('Error retrieving product details:', err)
           }
 
+          // Fetch user profile to get name
+          const { data: userProfile } = await adminSupabase
+            .from('users')
+            .select('name')
+            .eq('id', userId)
+            .single()
+          const userName = userProfile?.name || ''
+
           // Track order_completed event
           await trackEvent(userId, 'order_completed', {
+            name: userName,
             session_id: sessionId,
             product_name: productName,
             price: price,
@@ -92,6 +101,7 @@ export async function GET(request: NextRequest) {
             currency: session.currency || 'usd',
           })
           await logAuditEvent(userId, 'order_completed', {
+            name: userName,
             session_id: sessionId,
             product_name: productName,
             price: price,

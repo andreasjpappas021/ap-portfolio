@@ -56,12 +56,14 @@ export async function POST(request: NextRequest) {
 
       await trackEvent(user.id, 'user_registered', {
         email: user.email,
+        name: name,
         job: job,
         company: company,
       })
 
       await logAuditEvent(user.id, 'user_registered', {
         email: user.email,
+        name: name,
         job: job,
         company: company,
       })
